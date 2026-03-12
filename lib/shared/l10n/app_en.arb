@@ -1,0 +1,163 @@
+{
+  "@@locale": "en",
+  "appName": "Hesabat",
+  "@appName": {
+    "description": "The app name"
+  },
+  "welcome": "Welcome",
+  "@welcome": {
+    "description": "Welcome message"
+  },
+  "login": "Login",
+  "@login": {
+    "description": "Login button text"
+  },
+  "phoneNumber": "Phone Number",
+  "@phoneNumber": {
+    "description": "Phone number input label"
+  },
+  "enterOtp": "Enter OTP",
+  "@enterOtp": {
+    "description": "OTP input label"
+  },
+  "verify": "Verify",
+  "@verify": {
+    "description": "Verify button"
+  },
+  "resendOtp": "Resend OTP",
+  "@resendOtp": {
+    "description": "Resend OTP button"
+  },
+  "language": "Language",
+  "@language": {
+    "description": "Language selection"
+  },
+  "english": "English",
+  "@english": {
+    "description": "English language"
+  },
+  "dari": "Dari",
+  "@dari": {
+    "description": "Dari language"
+  },
+  "pashto": "Pashto",
+  "@pashto": {
+    "description": "Pashto language"
+  },
+  "shopName": "Shop Name",
+  "@shopName": {
+    "description": "Shop name input"
+  },
+  "shopType": "Shop Type",
+  "@shopType": {
+    "description": "Shop type selection"
+  },
+  "grocery": "Grocery",
+  "@grocery": {
+    "description": "Grocery shop type"
+  },
+  "pharmacy": "Pharmacy",
+  "@pharmacy": {
+    "description": "Pharmacy shop type"
+  },
+  "hardware": "Hardware",
+  "@hardware": {
+    "description": "Hardware shop type"
+  },
+  "electronics": "Electronics",
+  "@electronics": {
+    "description": "Electronics shop type"
+  },
+  "clothing": "Clothing",
+  "@clothing": {
+    "description": "Clothing shop type"
+  },
+  "bakery": "Bakery",
+  "@bakery": {
+    "description": "Bakery shop type"
+  },
+  "restaurant": "Restaurant",
+  "@restaurant": {
+    "description": "Restaurant shop type"
+  },
+  "general": "General",
+  "@general": {
+    "description": "General shop type"
+  },
+  "currency": "Currency",
+  "@currency": {
+    "description": "Currency selection"
+  },
+  "afn": "Afghan Afghani",
+  "@afn": {
+    "description": "AFN currency"
+  },
+  "usd": "US Dollar",
+  "@usd": {
+    "description": "USD currency"
+  },
+  "pkr": "Pakistani Rupee",
+  "@pkr": {
+    "description": "PKR currency"
+  },
+  "continueButton": "Continue",
+  "@continueButton": {
+    "description": "Continue button"
+  },
+  "skip": "Skip",
+  "@skip": {
+    "description": "Skip button"
+  },
+  "save": "Save",
+  "@save": {
+    "description": "Save button"
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Cancel button"
+  },
+  "delete": "Delete",
+  "@delete": {
+    "description": "Delete button"
+  },
+  "edit": "Edit",
+  "@edit": {
+    "description": "Edit button"
+  },
+  "add": "Add",
+  "@add": {
+    "description": "Add button"
+  },
+  "search": "Search",
+  "@search": {
+    "description": "Search hint"
+  },
+  "noResults": "No results found",
+  "@noResults": {
+    "description": "No results message"
+  },
+  "error": "Error",
+  "@error": {
+    "description": "Error title"
+  },
+  "success": "Success",
+  "@success": {
+    "description": "Success title"
+  },
+  "loading": "Loading...",
+  "@loading": {
+    "description": "Loading message"
+  },
+  "offline": "Offline",
+  "@offline": {
+    "description": "Offline status"
+  },
+  "online": "Online",
+  "@online": {
+    "description": "Online status"
+  },
+  "syncing": "Syncing...",
+  "@syncing": {
+    "description": "Syncing status"
+  }
+}

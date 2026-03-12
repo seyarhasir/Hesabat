@@ -1,0 +1,163 @@
+{
+  "@@locale": "ps",
+  "appName": "حسابات",
+  "@appName": {
+    "description": "The app name"
+  },
+  "welcome": "ښه راغلاست",
+  "@welcome": {
+    "description": "Welcome message"
+  },
+  "login": "ننوتل",
+  "@login": {
+    "description": "Login button text"
+  },
+  "phoneNumber": "د تلیفون شمیره",
+  "@phoneNumber": {
+    "description": "Phone number input label"
+  },
+  "enterOtp": "د تایید کوډ دننه کړئ",
+  "@enterOtp": {
+    "description": "OTP input label"
+  },
+  "verify": "تایید",
+  "@verify": {
+    "description": "Verify button"
+  },
+  "resendOtp": "کډ بیا ولېږئ",
+  "@resendOtp": {
+    "description": "Resend OTP button"
+  },
+  "language": "ژبه",
+  "@language": {
+    "description": "Language selection"
+  },
+  "english": "English",
+  "@english": {
+    "description": "English language"
+  },
+  "dari": "دری",
+  "@dari": {
+    "description": "Dari language"
+  },
+  "pashto": "پښتو",
+  "@pashto": {
+    "description": "Pashto language"
+  },
+  "shopName": "دکان نوم",
+  "@shopName": {
+    "description": "Shop name input"
+  },
+  "shopType": "د دکان ډول",
+  "@shopType": {
+    "description": "Shop type selection"
+  },
+  "grocery": "سوپرمارکت",
+  "@grocery": {
+    "description": "Grocery shop type"
+  },
+  "pharmacy": "درملتون",
+  "@pharmacy": {
+    "description": "Pharmacy shop type"
+  },
+  "hardware": "آهن‌فروشی",
+  "@hardware": {
+    "description": "Hardware shop type"
+  },
+  "electronics": "الکترونیک",
+  "@electronics": {
+    "description": "Electronics shop type"
+  },
+  "clothing": "د جامو پلورنځی",
+  "@clothing": {
+    "description": "Clothing shop type"
+  },
+  "bakery": "نانوایی",
+  "@bakery": {
+    "description": "Bakery shop type"
+  },
+  "restaurant": "رستورانت",
+  "@restaurant": {
+    "description": "Restaurant shop type"
+  },
+  "general": "عمومی دکان",
+  "@general": {
+    "description": "General shop type"
+  },
+  "currency": "ارز",
+  "@currency": {
+    "description": "Currency selection"
+  },
+  "afn": "افغانی",
+  "@afn": {
+    "description": "AFN currency"
+  },
+  "usd": "امریکایی ډالر",
+  "@usd": {
+    "description": "USD currency"
+  },
+  "pkr": "پاکستانی روپیه",
+  "@pkr": {
+    "description": "PKR currency"
+  },
+  "continueButton": "دوام",
+  "@continueButton": {
+    "description": "Continue button"
+  },
+  "skip": "تیرول",
+  "@skip": {
+    "description": "Skip button"
+  },
+  "save": "خوندي کول",
+  "@save": {
+    "description": "Save button"
+  },
+  "cancel": "لغوه",
+  "@cancel": {
+    "description": "Cancel button"
+  },
+  "delete": "ړنګول",
+  "@delete": {
+    "description": "Delete button"
+  },
+  "edit": "سمول",
+  "@edit": {
+    "description": "Edit button"
+  },
+  "add": "اضافه کول",
+  "@add": {
+    "description": "Add button"
+  },
+  "search": "لټون",
+  "@search": {
+    "description": "Search hint"
+  },
+  "noResults": "هیڅ پایله ونه موندل شوه",
+  "@noResults": {
+    "description": "No results message"
+  },
+  "error": "تیروتنه",
+  "@error": {
+    "description": "Error title"
+  },
+  "success": "بریا",
+  "@success": {
+    "description": "Success title"
+  },
+  "loading": "د بارکولو په حال کې...",
+  "@loading": {
+    "description": "Loading message"
+  },
+  "offline": "آفلاین",
+  "@offline": {
+    "description": "Offline status"
+  },
+  "online": "آنلاین",
+  "@online": {
+    "description": "Online status"
+  },
+  "syncing": "د همګامولو په حال کې...",
+  "@syncing": {
+    "description": "Syncing status"
+  }
+}
