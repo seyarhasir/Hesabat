@@ -141,39 +141,41 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen> {
         }
 
         return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text('محصول پیدا شد — تایید می‌کنید؟', style: TextStyle(fontWeight: FontWeight.w700)),
-                const SizedBox(height: 10),
-                row('Barcode', candidate.barcode),
-                row('Name (EN)', candidate.nameEn),
-                row('Name (Dari)', candidate.nameDari),
-                row('Brand', candidate.manufacturer ?? '-'),
-                row('Unit', candidate.unit),
-                row('Category', candidate.categoriesTags.isEmpty ? '-' : candidate.categoriesTags.first),
-                const SizedBox(height: 6),
-                FilledButton.icon(
-                  onPressed: () => Navigator.pop(context, true),
-                  icon: const Icon(Icons.check_rounded),
-                  label: const Text('تایید و افزودن'),
-                ),
-                const SizedBox(height: 6),
-                OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(context, false);
-                    Navigator.pop(this.context, {
-                      'barcode': candidate.barcode,
-                      'notFound': true,
-                    });
-                  },
-                  icon: const Icon(Icons.edit_rounded),
-                  label: const Text('ورود دستی'),
-                ),
-              ],
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text('محصول پیدا شد — تایید می‌کنید؟', style: TextStyle(fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 10),
+                  row('Barcode', candidate.barcode),
+                  row('Name (EN)', candidate.nameEn),
+                  row('Name (Dari)', candidate.nameDari),
+                  row('Brand', candidate.manufacturer ?? '-'),
+                  row('Unit', candidate.unit),
+                  row('Category', candidate.categoriesTags.isEmpty ? '-' : candidate.categoriesTags.first),
+                  const SizedBox(height: 16),
+                  FilledButton.icon(
+                    onPressed: () => Navigator.pop(context, true),
+                    icon: const Icon(Icons.check_rounded),
+                    label: const Text('تایید و افزودن'),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context, false);
+                      Navigator.pop(this.context, {
+                        'barcode': candidate.barcode,
+                        'notFound': true,
+                      });
+                    },
+                    icon: const Icon(Icons.edit_rounded),
+                    label: const Text('ورود دستی'),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -233,9 +235,13 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen> {
                 clipBehavior: Clip.antiAlias,
                 child: MobileScanner(
                   controller: _controller,
-                  onDetect: (capture) async {
-                    final raw = capture.barcodes.isNotEmpty ? capture.barcodes.first.rawValue : null;
+                  onDetect: (BarcodeCapture capture) async {
+                    final List<Barcode> barcodes = capture.barcodes;
+                    if (barcodes.isEmpty) return;
+                    
+                    final String? raw = barcodes.first.rawValue;
                     if (raw == null || raw.isEmpty) return;
+                    
                     await _handleBarcode(raw.trim());
                   },
                 ),

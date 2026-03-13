@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/auth/auth_provider.dart';
 import '../../../core/auth/guest_mode_service.dart';
+import '../../../core/database/app_database.dart';
+import '../../../core/database/database_provider.dart';
 import '../../../core/sync/sync_provider.dart';
 import '../../../core/utils/number_system_formatter.dart';
 import '../../../shared/theme/app_colors.dart';
@@ -82,9 +84,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     const todayCredit = 20000;
     const totalQarz = 145000;
     const lowStockItems = 7;
-    const recentCashSale = 12000;
-    const recentQarz = 8500;
-    const recentPayment = 5000;
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding, vertical: AppSpacing.xl),
       child: Column(
@@ -203,29 +202,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: AppSpacing.s),
-          Card(
-            child: Column(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.payments_rounded, color: AppColors.success),
-                  title: Text(t('Cash sale ${_nf(recentCashSale)} ؋', 'فروش نقد ${_nf(recentCashSale)} ؋', 'نغدي پلور ${_nf(recentCashSale)} ؋')),
-                  subtitle: Text(t('${_nf(10)} minutes ago', '${_nf(10)} دقیقه پیش', '${_nf(10)} دقیقې مخکې')),
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.people_alt_rounded, color: AppColors.warning),
-                  title: Text(t('Qarz to Mohammad ${_nf(recentQarz)} ؋', 'قرض محمد ${_nf(recentQarz)} ؋', 'محمد ته قرض ${_nf(recentQarz)} ؋')),
-                  subtitle: Text(t('${_nf(35)} minutes ago', '${_nf(35)} دقیقه پیش', '${_nf(35)} دقیقې مخکې')),
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.favorite_rounded, color: AppColors.success),
-                  title: Text(t('Debt payment ${_nf(recentPayment)} ؋', 'پرداخت قرض ${_nf(recentPayment)} ؋', 'د قرض تادیه ${_nf(recentPayment)} ؋')),
-                  subtitle: Text(t('${_nf(2)} hours ago', '${_nf(2)} ساعت پیش', '${_nf(2)} ساعته مخکې')),
-                ),
-              ],
-            ),
-          ),
+          _buildRecentSalesPreview(theme, t),
           const SizedBox(height: AppSpacing.sectionGap),
           Align(
             alignment: Alignment.centerLeft,
@@ -244,6 +221,87 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildRecentSalesPreview(ThemeData theme, String Function(String, String, String) t) {
+    final db = ref.watch(databaseProvider);
+    final shopId = ref.watch(currentShopIdProvider);
+
+    return StreamBuilder<List<Sale>>(
+      stream: db.salesDao.watchSalesByShopId(shopId),
+      builder: (context, snapshot) {
+        final sales = [...(snapshot.data ?? const <Sale>[])];
+        sales.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        final recent = sales.take(3).toList();
+
+        if (recent.isEmpty) {
+          return Card(
+            child: ListTile(
+              leading: const Icon(Icons.receipt_long_rounded),
+              title: Text(t('No recent sales', 'فروش اخیر وجود ندارد', 'وروستي پلور نشته')),
+              subtitle: Text(t('Start a new sale to see activity', 'برای دیدن فعالیت، فروش جدید ثبت کنید', 'د فعالیت لپاره نوی پلور ثبت کړئ')),
+              trailing: TextButton(
+                onPressed: () => setState(() => _currentTab = 1),
+                child: Text(t('New sale', 'فروش جدید', 'نوی پلور')),
+              ),
+            ),
+          );
+        }
+
+        return Card(
+          child: Column(
+            children: [
+              ...recent.asMap().entries.map((entry) {
+                final i = entry.key;
+                final sale = entry.value;
+                final isCredit = sale.isCredit || sale.paymentMethod == 'credit';
+                final color = isCredit ? AppColors.warning : AppColors.success;
+                return Column(
+                  children: [
+                    ListTile(
+                      leading: Icon(isCredit ? Icons.credit_card_rounded : Icons.payments_rounded, color: color),
+                      title: Text('${_nf(sale.totalAfn)} ؋'),
+                      subtitle: Text('${_paymentMethodText(sale.paymentMethod, t)} • ${_timeAgoText(sale.createdAt, t)}'),
+                    ),
+                    if (i < recent.length - 1) const Divider(height: 1),
+                  ],
+                );
+              }),
+              const Divider(height: 1),
+              ListTile(
+                title: Text(t('View all sales', 'نمایش همه فروش‌ها', 'ټول پلورونه وګورئ')),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => setState(() => _currentTab = 1),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _paymentMethodText(String method, String Function(String, String, String) t) {
+    switch (method) {
+      case 'credit':
+        return t('Credit', 'قرضی', 'قرض');
+      case 'mixed':
+        return t('Mixed', 'ترکیبی', 'ګډ');
+      default:
+        return t('Cash', 'نقدی', 'نغدي');
+    }
+  }
+
+  String _timeAgoText(DateTime time, String Function(String, String, String) t) {
+    final mins = DateTime.now().difference(time).inMinutes;
+    if (mins < 60) {
+      return t('${_nf(mins)} min ago', '${_nf(mins)} دقیقه پیش', '${_nf(mins)} دقیقې مخکې');
+    }
+    final hrs = (mins / 60).floor();
+    if (hrs < 24) {
+      return t('${_nf(hrs)} hr ago', '${_nf(hrs)} ساعت پیش', '${_nf(hrs)} ساعت مخکې');
+    }
+    final days = (hrs / 24).floor();
+    return t('${_nf(days)} day ago', '${_nf(days)} روز پیش', '${_nf(days)} ورځ مخکې');
   }
 
   Widget _buildWelcomeHeader(dynamic authState, ThemeData theme) {

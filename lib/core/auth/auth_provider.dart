@@ -131,6 +131,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
 /// Provider
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  final supabase = Supabase.instance.client;
+  SupabaseClient supabase;
+  try {
+    // Try to use the initialized singleton instance if available
+    supabase = Supabase.instance.client;
+  } catch (_) {
+    // Fallback: Create a direct client if initialization hasn't happened yet.
+    // This allows the app to proceed with local logic while Supabase starts in background.
+    supabase = SupabaseClient(
+      const String.fromEnvironment('SUPABASE_URL', defaultValue: 'https://your-project.supabase.co'),
+      const String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: 'your-anon-key'),
+    );
+  }
   return AuthNotifier(AuthService(supabase));
 });

@@ -90,8 +90,12 @@ class GuestModeService {
   
   /// Check if guest mode is currently active
   static Future<bool> isGuestMode() async {
-    final value = await _storage.read(key: _guestModeKey);
-    return value == 'true';
+    try {
+      final value = await _storage.read(key: _guestModeKey).timeout(const Duration(seconds: 2));
+      return value == 'true';
+    } catch (_) {
+      return false; // Default to not guest if it hangs
+    }
   }
   
   /// Activate guest mode
@@ -110,8 +114,12 @@ class GuestModeService {
   
   /// Get current product count in guest mode
   static Future<int> getProductsCount() async {
-    final value = await _storage.read(key: _guestProductsCountKey);
-    return int.tryParse(value ?? '0') ?? 0;
+    try {
+      final value = await _storage.read(key: _guestProductsCountKey).timeout(const Duration(seconds: 2));
+      return int.tryParse(value ?? '0') ?? 0;
+    } catch (_) {
+      return 0;
+    }
   }
   
   /// Increment product count
@@ -129,8 +137,12 @@ class GuestModeService {
   
   /// Get current sales count in guest mode
   static Future<int> getSalesCount() async {
-    final value = await _storage.read(key: _guestSalesCountKey);
-    return int.tryParse(value ?? '0') ?? 0;
+    try {
+      final value = await _storage.read(key: _guestSalesCountKey).timeout(const Duration(seconds: 2));
+      return int.tryParse(value ?? '0') ?? 0;
+    } catch (_) {
+      return 0;
+    }
   }
   
   /// Check if can add sale

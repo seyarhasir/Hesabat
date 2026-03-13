@@ -31,6 +31,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    print('HESABAT: SplashScreen build');
     final cs = Theme.of(context).colorScheme;
     final theme = Theme.of(context);
 

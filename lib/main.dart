@@ -30,6 +30,7 @@ import 'features/sales/screens/sale_confirmation_screen.dart';
 import 'features/qarz/screens/customer_debt_detail_screen.dart';
 import 'features/qarz/screens/record_payment_screen.dart';
 import 'features/qarz/screens/add_customer_screen.dart';
+import 'features/qarz/screens/add_qarz_screen.dart';
 import 'features/inventory/screens/product_list_screen.dart';
 import 'features/inventory/screens/add_edit_product_screen.dart';
 import 'features/inventory/screens/stock_take_screen.dart';
@@ -47,37 +48,57 @@ import 'shared/theme/app_theme.dart';
 import 'shared/l10n/generated/app_localizations.dart';
 
 void main() async {
+  print('HESABAT: main() started');
+  // 1. Core Flutter engine bootstrap
   WidgetsFlutterBinding.ensureInitialized();
+  print('HESABAT: Flutter initialized');
 
-  await Supabase.initialize(
-    url: const String.fromEnvironment('SUPABASE_URL', defaultValue: 'https://your-project.supabase.co'),
-    anonKey: const String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: 'your-anon-key'),
-  );
-
-  // Create container and render first frame fast.
+  // 2. Immediate rendering of the First Frame
   final container = ProviderContainer();
-
+  print('HESABAT: ProviderContainer created');
   runApp(UncontrolledProviderScope(container: container, child: const HesabatApp()));
+  print('HESABAT: runApp() called');
 
-  // Do slower setup work after app is visible to avoid iOS launch watchdog kills.
-  unawaited(_bootstrapApp(container));
+  // 3. Deferred initialization (delay by 1 second to ensure engine is free)
+  Future.delayed(const Duration(seconds: 1), () {
+    print('HESABAT: Starting background bootstrap...');
+    _bootstrapApp(container);
+  });
 }
 
 Future<void> _bootstrapApp(ProviderContainer container) async {
+  print('HESABAT: Bootstrap task running');
+  // 1. Core infrastructure (Supabase first as services depend on it)
   try {
-    await ConnectivityService.instance.initialize();
+    print('HESABAT: Initializing Supabase...');
+    await Supabase.initialize(
+      url: const String.fromEnvironment('SUPABASE_URL', defaultValue: 'https://your-project.supabase.co'),
+      anonKey: const String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: 'your-anon-key'),
+    ).timeout(const Duration(seconds: 4));
+    print('HESABAT: Supabase initialized');
   } catch (e) {
-    debugPrint('Connectivity bootstrap failed: $e');
+    print('HESABAT: Supabase init skipped/failed: $e');
   }
 
   try {
-    final db = container.read(databaseProvider);
-    await db.initializeDatabase();
-    await SyncService.instance.initialize(db);
-    await ExchangeRateService.instance.initialize(db);
-    await ExchangeRateService.instance.getLatestSnapshot();
+    print('HESABAT: Initializing Connectivity...');
+    await ConnectivityService.instance.initialize();
+    print('HESABAT: Connectivity initialized');
   } catch (e) {
-    debugPrint('Database bootstrap failed: $e');
+    print('HESABAT: Connectivity init failed: $e');
+  }
+
+  try {
+    print('HESABAT: Initializing Database...');
+    final db = container.read(databaseProvider);
+    await db.initializeDatabase().timeout(const Duration(seconds: 4));
+    print('HESABAT: Database initialized');
+    await SyncService.instance.initialize(db);
+    print('HESABAT: Sync service initialized');
+    await ExchangeRateService.instance.initialize(db);
+    print('HESABAT: Exchange service initialized');
+  } catch (e) {
+    print('HESABAT: Database/Sync bootstrap failed: $e');
   }
 
   try {
@@ -137,10 +158,11 @@ class HesabatApp extends ConsumerWidget {
       ],
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) {
+        print('HESABAT: MaterialApp builder running (child exists: ${child != null})');
         final isRtl = locale.languageCode == 'fa' || locale.languageCode == 'ps';
         return Directionality(
           textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
-          child: child ?? const SizedBox.shrink(),
+          child: child ?? const Center(child: Text('Engine Error: No Child')),
         );
       },
       initialRoute: '/',
@@ -193,6 +215,8 @@ class HesabatApp extends ConsumerWidget {
             );
           case '/qarz/add-customer':
             return MaterialPageRoute(builder: (_) => const AddCustomerScreen());
+          case '/qarz/add-debt':
+            return MaterialPageRoute(builder: (_) => const AddQarzScreen());
           case '/inventory':
             return MaterialPageRoute(builder: (_) => const ProductListScreen());
           case '/inventory/add-product':

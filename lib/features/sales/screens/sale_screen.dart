@@ -24,8 +24,8 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
   final List<CartItem> _cart = [];
   final _searchController = TextEditingController();
   String _searchQuery = '';
+  String _mode = 'new'; // new | history
   bool _isLoading = false;
-  bool _showCartFirst = false;
   List<Product> _searchResults = [];
   List<Product> _recentProducts = [];
 
@@ -53,9 +53,11 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_tr('New Sale', 'فروش جدید', 'نوی پلور')),
+        title: Text(_mode == 'new'
+            ? _tr('New Sale', 'فروش جدید', 'نوی پلور')
+            : _tr('Sales History', 'تاریخچه فروش', 'د پلور تاریخچه')),
         actions: [
-          if (_cart.isNotEmpty)
+          if (_mode == 'new' && _cart.isNotEmpty)
             TextButton.icon(
               onPressed: _clearCart,
               icon: const Icon(Icons.clear_all_rounded, size: 20),
@@ -65,7 +67,32 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
       ),
       body: Column(
         children: [
-          // Search bar
+          Padding(
+            padding: const EdgeInsets.fromLTRB(AppSpacing.l, AppSpacing.l, AppSpacing.l, 0),
+            child: SegmentedButton<String>(
+              segments: [
+                ButtonSegment<String>(
+                  value: 'new',
+                  icon: const Icon(Icons.add_shopping_cart_rounded),
+                  label: Text(_tr('New Sale', 'فروش جدید', 'نوی پلور')),
+                ),
+                ButtonSegment<String>(
+                  value: 'history',
+                  icon: const Icon(Icons.receipt_long_rounded),
+                  label: Text(_tr('History', 'تاریخچه', 'تاریخچه')),
+                ),
+              ],
+              selected: {_mode},
+              onSelectionChanged: (selection) {
+                setState(() {
+                  _mode = selection.first;
+                });
+              },
+            ),
+          ),
+
+          if (_mode == 'new')
+            // Search bar
           Padding(
             padding: const EdgeInsets.all(AppSpacing.l),
             child: Container(
@@ -77,47 +104,46 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
               ),
               child: Column(
               children: [
-                TextField(
-                  controller: _searchController,
-                  onChanged: _onSearch,
-                  decoration: InputDecoration(
-                    hintText: _tr('Search products...', 'جستجوی محصول...', 'د محصول لټون...'),
-                    prefixIcon: const Icon(Icons.search_rounded),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear_rounded),
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() {
-                                _searchQuery = '';
-                                _searchResults = [];
-                              });
-                            },
-                          )
-                        : null,
-                    filled: true,
-                    border: OutlineInputBorder(
-                      borderRadius: AppRadius.medium,
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.m),
                 Row(
                   children: [
                     Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _openBarcodeScanner,
-                        icon: const Icon(Icons.qr_code_scanner_rounded),
-                        label: Text(_tr('Scan', 'اسکن', 'سکن')),
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: _onSearch,
+                        decoration: InputDecoration(
+                          hintText: _tr('Search products...', 'جستجوی محصول...', 'د محصول لټون...'),
+                          prefixIcon: const Icon(Icons.search_rounded),
+                          suffixIcon: _searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear_rounded),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    setState(() {
+                                      _searchQuery = '';
+                                      _searchResults = [];
+                                    });
+                                  },
+                                )
+                              : null,
+                          filled: true,
+                          border: OutlineInputBorder(
+                            borderRadius: AppRadius.medium,
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(width: AppSpacing.m),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _showRecentProducts,
-                        icon: const Icon(Icons.history_rounded),
-                        label: Text(_tr('Recent', 'اخیر', 'وروستي')),
+                    SizedBox(
+                      height: 52,
+                      width: 52,
+                      child: OutlinedButton(
+                        onPressed: _openBarcodeScanner,
+                        style: OutlinedButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(borderRadius: AppRadius.medium),
+                        ),
+                        child: const Icon(Icons.qr_code_scanner_rounded),
                       ),
                     ),
                   ],
@@ -126,29 +152,30 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
             ),
           ),
 
-          // Cart mini summary
-          if (_cart.isNotEmpty) _buildCartMiniSummary(cs, theme),
-
-          // Product list, recent+cart, or empty state
+          // Product list / history list
           Expanded(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 180),
-              child: _searchQuery.isNotEmpty
-                  ? _buildProductSearchResults(cs, theme)
-                  : _isLoading && _recentProducts.isEmpty && _cart.isEmpty
-                      ? const Center(child: CircularProgressIndicator())
-                      : (_recentProducts.isNotEmpty || _cart.isNotEmpty)
-                          ? _buildRecentAndCart(cs, theme)
-                          : AppEmptyState(
-                              title: _tr('Start a New Sale', 'فروش جدید را شروع کنید', 'نوی پلور پیل کړئ'),
-                              description: _tr('Search or scan products to add to cart', 'برای افزودن به سبد، محصول را جستجو یا اسکن کنید', 'ټوکرۍ ته د زیاتولو لپاره محصولات ولټوئ یا سکن کړئ'),
-                              icon: Icons.add_shopping_cart_rounded,
-                            ),
-            ),
+            child: _mode == 'history'
+                ? _buildSalesHistoryView(cs, theme)
+                : AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 180),
+                    child: _searchQuery.isNotEmpty
+                        ? _buildProductSearchResults(cs, theme)
+                        : _isLoading && _recentProducts.isEmpty && _cart.isEmpty
+                            ? const Center(child: CircularProgressIndicator())
+                            : _cart.isNotEmpty
+                                ? _buildCartFocusedView(cs, theme)
+                                : _recentProducts.isNotEmpty
+                                    ? _buildRecentList(cs, theme)
+                                    : AppEmptyState(
+                                        title: _tr('Start a New Sale', 'فروش جدید را شروع کنید', 'نوی پلور پیل کړئ'),
+                                        description: _tr('Search or scan products to add to cart', 'برای افزودن به سبد، محصول را جستجو یا اسکن کنید', 'ټوکرۍ ته د زیاتولو لپاره محصولات ولټوئ یا سکن کړئ'),
+                                        icon: Icons.add_shopping_cart_rounded,
+                                      ),
+                  ),
           ),
         ],
       ),
-      bottomNavigationBar: _cart.isEmpty
+      bottomNavigationBar: _mode != 'new' || _cart.isEmpty
           ? null
           : SafeArea(
               child: Container(
@@ -210,6 +237,124 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
     );
   }
 
+  Widget _buildSalesHistoryView(ColorScheme cs, ThemeData theme) {
+    final db = ref.watch(databaseProvider);
+    final shopId = ref.watch(currentShopIdProvider);
+
+    return StreamBuilder<List<Sale>>(
+      stream: db.salesDao.watchSalesByShopId(shopId),
+      builder: (context, snapshot) {
+        final sales = [...(snapshot.data ?? const <Sale>[])];
+        sales.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (sales.isEmpty) {
+          return AppEmptyState(
+            title: _tr('No sales yet', 'هنوز فروشی ثبت نشده', 'لا تر اوسه پلور نشته'),
+            description: _tr('Record a new sale to see history here', 'برای دیدن تاریخچه، یک فروش جدید ثبت کنید', 'دلته د تاریخچې لپاره نوی پلور ثبت کړئ'),
+            icon: Icons.receipt_long_rounded,
+            actionText: _tr('Start New Sale', 'شروع فروش جدید', 'نوی پلور پیل کړئ'),
+            onActionPressed: () => setState(() => _mode = 'new'),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(AppSpacing.l),
+          itemCount: sales.length,
+          itemBuilder: (context, index) {
+            final sale = sales[index];
+            final isCredit = sale.isCredit || sale.paymentMethod == 'credit';
+            final statusColor = isCredit ? AppColors.warning : AppColors.success;
+
+            return Card(
+              margin: const EdgeInsets.only(bottom: AppSpacing.m),
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.m, vertical: AppSpacing.s),
+                leading: CircleAvatar(
+                  backgroundColor: statusColor.withOpacity(0.12),
+                  child: Icon(isCredit ? Icons.credit_card_rounded : Icons.payments_rounded, color: statusColor),
+                ),
+                title: Text(
+                  '${_nf(sale.totalAfn)} ${_tr('AFN', '؋', '؋')}',
+                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                subtitle: Text(
+                  '${_paymentMethodLabel(sale.paymentMethod)} • ${_formatSaleDate(sale.createdAt)}',
+                  style: theme.textTheme.bodySmall,
+                ),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => _openSaleDetails(sale),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  String _paymentMethodLabel(String method) {
+    switch (method) {
+      case 'credit':
+        return _tr('Credit', 'قرضی', 'قرض');
+      case 'mixed':
+        return _tr('Mixed', 'ترکیبی', 'ګډ');
+      case 'cash':
+      default:
+        return _tr('Cash', 'نقدی', 'نغدي');
+    }
+  }
+
+  String _formatSaleDate(DateTime dt) {
+    final hh = dt.hour.toString().padLeft(2, '0');
+    final mm = dt.minute.toString().padLeft(2, '0');
+    return '${dt.year}/${dt.month.toString().padLeft(2, '0')}/${dt.day.toString().padLeft(2, '0')} $hh:$mm';
+  }
+
+  Future<void> _openSaleDetails(Sale sale) async {
+    final db = ref.read(databaseProvider);
+    final items = await db.salesDao.getSaleItems(sale.id);
+    if (!mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.fromLTRB(AppSpacing.l, AppSpacing.s, AppSpacing.l, AppSpacing.l),
+            children: [
+              Text(_tr('Sale Details', 'جزئیات فروش', 'د پلور جزییات'), style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: AppSpacing.s),
+              Text(_tr('Date: ${_formatSaleDate(sale.createdAt)}', 'تاریخ: ${_formatSaleDate(sale.createdAt)}', 'نېټه: ${_formatSaleDate(sale.createdAt)}')),
+              Text(_tr('Payment: ${_paymentMethodLabel(sale.paymentMethod)}', 'پرداخت: ${_paymentMethodLabel(sale.paymentMethod)}', 'تادیه: ${_paymentMethodLabel(sale.paymentMethod)}')),
+              const SizedBox(height: AppSpacing.m),
+              ...items.map((item) => ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(item.productNameSnapshot),
+                    subtitle: Text(_tr('Qty: ${_nf(item.quantity)} × ${_nf(item.unitPrice)}', 'تعداد: ${_nf(item.quantity)} × ${_nf(item.unitPrice)}', 'شمېر: ${_nf(item.quantity)} × ${_nf(item.unitPrice)}')),
+                    trailing: Text('${_nf(item.subtotal)} ${_tr('AFN', '؋', '؋')}'),
+                  )),
+              const Divider(),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(_tr('Total', 'مجموع', 'ټول')),
+                trailing: Text(
+                  '${_nf(sale.totalAfn)} ${_tr('AFN', '؋', '؋')}',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _onSearch(String value) async {
     setState(() => _searchQuery = value);
     if (value.trim().isEmpty) {
@@ -236,46 +381,6 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
       _recentProducts = recent.where((p) => p.isActive).toList();
       _isLoading = false;
     });
-  }
-
-  void _showRecentProducts() {
-    FocusScope.of(context).unfocus();
-    _searchController.clear();
-    setState(() {
-      _searchQuery = '';
-      _searchResults = [];
-    });
-    _loadRecentProducts();
-  }
-
-  Widget _buildCartMiniSummary(ColorScheme cs, ThemeData theme) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(AppSpacing.l, 0, AppSpacing.l, AppSpacing.l),
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.l, vertical: AppSpacing.s),
-      decoration: BoxDecoration(
-        color: cs.primary.withOpacity(0.05),
-        borderRadius: AppRadius.medium,
-        border: Border.all(color: cs.primary.withOpacity(0.1)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            _tr('${_cart.length} items in cart', '${_cart.length} محصول در سبد', 'په ټوکرۍ کې ${_cart.length} توکي'),
-            style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, color: cs.primary),
-          ),
-          TextButton(
-            onPressed: () {
-              setState(() {
-                _searchQuery = '';
-                _showCartFirst = true;
-              });
-            },
-            child: Text(_tr('View Cart', 'نمایش سبد', 'ټوکرۍ وګورئ')),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildProductSearchResults(ColorScheme cs, ThemeData theme) {
@@ -320,65 +425,64 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
     );
   }
 
-  Widget _buildRecentAndCart(ColorScheme cs, ThemeData theme) {
-    final recentSection = <Widget>[
-      Padding(
-        padding: EdgeInsets.only(bottom: AppSpacing.m, top: _showCartFirst && _cart.isNotEmpty ? AppSpacing.m : 0),
-        child: _sectionHeader(
-          theme,
-          title: _tr('Recent Products', 'محصولات اخیر', 'وروستي محصولات'),
-          count: _recentProducts.length,
-        ),
-      ),
-      ..._recentProducts.map((product) {
-        final inCart = _cart.any((c) => c.productId == product.id);
-        return Padding(
-          padding: const EdgeInsets.only(bottom: AppSpacing.m),
-          child: ProductCard(
-            name: product.nameDari,
-            barcode: product.barcode,
-            price: product.price,
-            stockQuantity: product.stockQuantity,
-            minStockAlert: product.minStockAlert,
-            unit: product.unit,
-            trailing: inCart
-                ? Container(
-                    padding: const EdgeInsets.all(AppSpacing.xs),
-                    decoration: BoxDecoration(color: AppColors.success.withOpacity(0.1), shape: BoxShape.circle),
-                    child: Icon(Icons.check_rounded, color: AppColors.success, size: 20),
-                  )
-                : IconButton(
-                    icon: Icon(Icons.add_circle_rounded, color: cs.primary, size: 28),
-                    onPressed: () => _addToCart(product),
-                  ),
-          ),
-        );
-      }),
-    ];
-
-    final cartSection = <Widget>[
-      Padding(
-        padding: EdgeInsets.only(top: _recentProducts.isNotEmpty ? AppSpacing.m : 0, bottom: AppSpacing.m),
-        child: _sectionHeader(
-          theme,
-          title: _tr('Cart', 'سبد خرید', 'ټوکرۍ'),
-          count: _cart.length,
-        ),
-      ),
-      ..._cart.asMap().entries.map((entry) => _buildCartItemCard(entry.key, entry.value, cs, theme)),
-    ];
-
+  Widget _buildCartFocusedView(ColorScheme cs, ThemeData theme) {
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.l),
       children: [
-        if (_showCartFirst && _cart.isNotEmpty) ...cartSection,
-        if (_recentProducts.isNotEmpty) ...recentSection,
-        if (!_showCartFirst && _cart.isNotEmpty) ...cartSection,
+        Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.m),
+          child: _sectionHeader(
+            theme,
+            title: _tr('Cart', 'سبد خرید', 'ټوکرۍ'),
+            count: _cart.length,
+          ),
+        ),
+        ..._cart.asMap().entries.map((entry) => _buildCartItemCard(entry.key, entry.value, cs, theme)),
       ],
     );
   }
 
-  Widget _sectionHeader(ThemeData theme, {required String title, required int count}) {
+  Widget _buildRecentList(ColorScheme cs, ThemeData theme) {
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.l),
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.m),
+          child: _sectionHeader(
+            theme,
+            title: _tr('Recent Products', 'محصولات اخیر', 'وروستي محصولات'),
+            count: _recentProducts.length,
+          ),
+        ),
+        ..._recentProducts.map((product) {
+          final inCart = _cart.any((c) => c.productId == product.id);
+          return Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.m),
+            child: ProductCard(
+              name: product.nameDari,
+              barcode: product.barcode,
+              price: product.price,
+              stockQuantity: product.stockQuantity,
+              minStockAlert: product.minStockAlert,
+              unit: product.unit,
+              trailing: inCart
+                  ? Container(
+                      padding: const EdgeInsets.all(AppSpacing.xs),
+                      decoration: BoxDecoration(color: AppColors.success.withOpacity(0.1), shape: BoxShape.circle),
+                      child: Icon(Icons.check_rounded, color: AppColors.success, size: 20),
+                    )
+                  : IconButton(
+                      icon: Icon(Icons.add_circle_rounded, color: cs.primary, size: 28),
+                      onPressed: () => _addToCart(product),
+                    ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _sectionHeader(ThemeData theme, {required String title, required int count, Widget? action}) {
     return Row(
       children: [
         Expanded(
@@ -401,6 +505,10 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
             ),
           ),
         ),
+        if (action != null) ...[
+          const SizedBox(width: AppSpacing.s),
+          action,
+        ],
       ],
     );
   }

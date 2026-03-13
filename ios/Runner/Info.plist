@@ -28,6 +28,14 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Hesabat uses the camera to scan product barcodes for sales and inventory.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Hesabat uses the photo library to scan barcodes from saved images.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Hesabat needs local network access for debugging and connectivity features.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_dartobservatory._tcp</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
