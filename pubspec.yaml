@@ -20,7 +20,6 @@ dependencies:
   # Local database (offline-first)
   drift: ^2.18.0
   drift_flutter: ^0.2.1
-  sqlite3_flutter_libs: ^0.5.24
   sqlcipher_flutter_libs: ^0.5.4
 
   # Backend / sync
@@ -30,6 +29,7 @@ dependencies:
 
   # Features
   mobile_scanner: ^5.2.3
+  openfoodfacts: ^3.30.2
   url_launcher: ^6.2.6
   flutter_local_notifications: ^17.2.2
   pdf: ^3.10.8
@@ -50,6 +50,9 @@ dependencies:
   # Environment
   flutter_dotenv: ^5.1.0
 
+  # Persian Calendar support
+  shamsi_date: ^1.0.0
+
   # The following adds the Cupertino Icons font to your application.
   cupertino_icons: ^1.0.8
 
@@ -63,6 +66,11 @@ dev_dependencies:
   drift_dev: ^2.18.0
   riverpod_generator: ^2.4.0
   flutter_lints: ^3.0.0
+
+# Override to use sqlcipher instead of regular sqlite3
+dependency_overrides:
+  sqlite3_flutter_libs:
+    path: ./custom_sqlcipher_override
 
 flutter:
   uses-material-design: true

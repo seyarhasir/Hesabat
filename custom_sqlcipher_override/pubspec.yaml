@@ -1,0 +1,9 @@
+name: sqlite3_flutter_libs
+description: Override package that redirects to sqlcipher_flutter_libs
+version: 0.0.1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  sqlcipher_flutter_libs: ^0.5.7

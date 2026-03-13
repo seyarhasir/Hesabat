@@ -263,7 +263,7 @@ for Edge Functions — and TypeScript is very similar to Dart in syntax.
 - ❌ **Paid CI/CD (CircleCI, etc.)** — GitHub Actions free tier is enough
 - ❌ **Paid error monitoring (Datadog, New Relic)** — Sentry free tier is enough
 - ❌ **Redis / Upstash** — Not needed. No background workers in serverless architecture.
-- ❌ **Paid SMS provider** — Supabase Auth handles OTP SMS in its free tier
+- ❌ **Paid SMS provider** — Using WhatsApp OTP (free) instead of expensive SMS
 - ❌ **Paid push notifications** — flutter_local_notifications is on-device and free; Firebase FCM has a free tier for remote push when needed
 - ❌ **Algolia search** — SQLite FTS5 (built into Drift) is free and fast enough for V1
 
@@ -534,12 +534,29 @@ CREATE POLICY own_shop_only ON shops
 
 ### 7.1 Onboarding & Authentication
 
-#### Phone Number + OTP Login (Supabase Auth — Free)
-- User enters Afghan mobile number (+93 prefix auto-applied)
-- 6-digit OTP received via SMS (Supabase handles SMS delivery free in trial; switch to Twilio when needed)
-- OTP valid for 10 minutes, maximum 3 attempts before 15-minute lockout
-- On success: JWT token issued, stored in Flutter Secure Storage (never in plain SharedPreferences)
-- Session refreshes automatically — shopkeeper stays logged in indefinitely
+#### Authentication Model: Admin-Controlled Signup + Guest Demo Mode
+
+**Production Flow (Paid Users Only):**
+- **No self-registration** — Only admin can create accounts via admin panel
+- User receives phone number + temporary password from sales agent/admin
+- User enters phone number → receives WhatsApp OTP → sets their own password
+- **Cost: $0** — No SMS provider needed, uses WhatsApp OTP
+- Maximum 3 attempts before 15-minute lockout
+- On success: JWT token issued, stored in Flutter Secure Storage
+- Session refreshes automatically
+
+**Why this model for Hesabat SaaS:**
+- Controlled rollout — you approve every shop before they get access
+- Sales-led growth — agents set up accounts during door-to-door visits
+- Prevents free riders — no unauthorized access
+- WhatsApp OTP is free and trusted by Afghan shopkeepers
+
+**Guest/Demo Mode (For Testing):**
+- Available in pre-production builds only
+- Limited features: max 10 products, 5 sales, no sync, no WhatsApp
+- Data stored locally only (no Supabase account created)
+- Watermark on all screens: "DEMO MODE — Contact us for full access"
+- Easy to reset/clear data
 
 #### Shop Setup Wizard (5 Steps)
 1. **Language selection** — Dari / Pashto / English (RTL layout activates automatically)
