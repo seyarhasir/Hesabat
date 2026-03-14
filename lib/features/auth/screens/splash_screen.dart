@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/auth/auth_provider.dart';
+import '../../../core/database/database_provider.dart';
+import '../../../core/settings/shop_profile_service.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -21,11 +25,41 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     if (!mounted) return;
 
     final authState = ref.read(authProvider);
+    ShopProfile? profile = await ShopProfileService.load();
+
+    // ISSUE-06 fix: If authenticated but no local profile, try fetching from cloud
+    if (profile == null && authState.isAuthenticated) {
+      try {
+        profile = await ShopProfileService.fetchFromCloud(Supabase.instance.client);
+      } catch (e) {
+        print('HESABAT: Cloud fetch on splash failed: $e');
+      }
+    }
+
+    if (profile != null) {
+      ref.read(currentShopIdProvider.notifier).state = profile.shopId;
+    }
 
     if (authState.isGuest || authState.isAuthenticated) {
       Navigator.pushReplacementNamed(context, '/home');
     } else {
-      Navigator.pushReplacementNamed(context, '/onboarding/language');
+      // ISSUE-15 fix: Check if language is already set (returning user)
+      final hasLanguage = await _hasLanguagePreference();
+      Navigator.pushReplacementNamed(
+        context,
+        hasLanguage ? '/auth/phone' : '/onboarding/language',
+      );
+    }
+  }
+
+  /// ISSUE-15: Check if user has previously selected a language
+  Future<bool> _hasLanguagePreference() async {
+    try {
+      const storage = FlutterSecureStorage();
+      final code = await storage.read(key: 'app_locale_code');
+      return code != null && code.isNotEmpty;
+    } catch (_) {
+      return false;
     }
   }
 

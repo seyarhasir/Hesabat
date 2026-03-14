@@ -49,7 +49,7 @@ class AuthSelectionScreen extends ConsumerWidget {
                 child: AppButton(
                   text: 'Sign In',
                   icon: Icons.login_rounded,
-                  onPressed: () => Navigator.pushNamed(context, '/auth/phone'),
+                  onPressed: () => Navigator.pushReplacementNamed(context, '/auth/phone'),
                   variant: AppButtonVariant.primary,
                 ),
               ),

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/utils/number_system_formatter.dart';
+import '../../../core/database/database_provider.dart';
+import '../../../core/settings/shop_profile_service.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/theme/app_colors.dart';
 
@@ -14,9 +17,71 @@ class FirstProductScreen extends ConsumerStatefulWidget {
 class _FirstProductScreenState extends ConsumerState<FirstProductScreen> {
   int _addedProducts = 0;
   final int _maxProducts = 3;
+  Map<String, dynamic>? _onboardingData;
+  bool _argsLoaded = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_argsLoaded) return;
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is Map<String, dynamic>) {
+      _onboardingData = args;
+    }
+    _argsLoaded = true;
+  }
 
   void _onAddProduct(String method) {
     setState(() => _addedProducts++);
+  }
+
+  Future<void> _completeSetup() async {
+    final shopName = (_onboardingData?['shopName']?.toString().trim().isNotEmpty ?? false)
+        ? _onboardingData!['shopName'].toString().trim()
+        : 'My Shop';
+    final shopType = (_onboardingData?['shopType']?.toString().trim().isNotEmpty ?? false)
+        ? _onboardingData!['shopType'].toString().trim()
+        : 'General Store';
+    final city = (_onboardingData?['city']?.toString().trim().isNotEmpty ?? false)
+        ? _onboardingData!['city'].toString().trim()
+        : 'Kabul';
+    final district = _onboardingData?['district']?.toString();
+    final currency = (_onboardingData?['currency']?.toString().trim().isNotEmpty ?? false)
+        ? _onboardingData!['currency'].toString().trim()
+        : 'AFN';
+
+    // ISSUE-04 fix: Use a temporary ID; saveToCloud() will replace it with the real UUID
+    // ISSUE-05 fix: Use 'trial' instead of hardcoded 'active'
+    final profile = ShopProfile(
+      shopId: 'pending_cloud_id',
+      shopName: shopName,
+      shopType: shopType,
+      city: city,
+      district: district,
+      currency: currency,
+      subscriptionStatus: 'trial',
+    );
+
+    await ShopProfileService.save(profile);
+
+    // Save to Supabase for cloud persistence — this will update local profile with real UUID
+    try {
+      final supabase = Supabase.instance.client;
+      await ShopProfileService.saveToCloud(supabase, profile);
+    } catch (e) {
+      debugPrint('HESABAT: Cloud save failed: $e');
+    }
+
+    // ISSUE-10: Mark onboarding as completed so it won't show again
+    await ShopProfileService.setOnboardingCompleted();
+
+    // Re-read the profile (may now have real UUID from saveToCloud)
+    final savedProfile = await ShopProfileService.load();
+    final realShopId = savedProfile?.shopId ?? profile.shopId;
+    ref.read(currentShopIdProvider.notifier).state = realShopId;
+
+    if (!mounted) return;
+    Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
   }
 
   @override
@@ -111,7 +176,7 @@ class _FirstProductScreenState extends ConsumerState<FirstProductScreen> {
 
               Center(
                 child: TextButton(
-                  onPressed: () => Navigator.pushReplacementNamed(context, '/home'),
+                  onPressed: _completeSetup,
                   child: const Text('Skip for now'),
                 ),
               ),
@@ -122,7 +187,7 @@ class _FirstProductScreenState extends ConsumerState<FirstProductScreen> {
                 width: double.infinity,
                 child: AppButton(
                   text: _addedProducts > 0 ? 'Complete Setup' : 'Start Using App',
-                  onPressed: () => Navigator.pushReplacementNamed(context, '/home'),
+                  onPressed: _completeSetup,
                 ),
               ),
               const SizedBox(height: 24),

@@ -82,12 +82,12 @@ class SaleConfirmationScreen extends StatelessWidget {
                             paymentMethod == 'credit'
                                 ? _tr(lang, 'Qarz', 'قرض', 'قرض')
                                 : paymentMethod == 'mixed'
-                                    ? _tr(lang, 'Mixed', 'مختلط', 'ګډ')
+                                    ? _tr(lang, 'Split', 'ترکیبی', 'ګډ')
                                     : _tr(lang, 'Cash', 'نقد', 'نغد'),
                           ),
                         ],
                       ),
-                      if (paymentMethod == 'credit' && customerName != null) ...[
+                      if ((paymentMethod == 'credit' || paymentMethod == 'mixed') && customerName != null) ...[
                         const SizedBox(height: 6),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,

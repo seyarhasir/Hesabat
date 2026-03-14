@@ -21,7 +21,6 @@ class QarzDashboardScreen extends ConsumerStatefulWidget {
 class _QarzDashboardScreenState extends ConsumerState<QarzDashboardScreen> {
   String _searchQuery = '';
   String _sortBy = 'amount';
-  String _viewMode = 'debts';
 
   String get _lang => Localizations.localeOf(context).languageCode;
   String _tr(String en, String fa, [String? ps]) => _lang == 'fa' ? fa : (_lang == 'ps' ? (ps ?? fa) : en);
@@ -39,42 +38,15 @@ class _QarzDashboardScreenState extends ConsumerState<QarzDashboardScreen> {
       appBar: AppBar(
         title: Text(_tr('Qarz', 'قرض‌ها', 'قرضونه')),
         actions: [
-          PopupMenuButton<String>(
-            tooltip: _tr('Add', 'افزودن', 'زیاتول'),
-            icon: const Icon(Icons.add_rounded),
-            onSelected: (value) {
-              if (value == 'qarz') {
-                _openAddQarzPage();
-              } else if (value == 'customer') {
-                Navigator.pushNamed(context, '/qarz/add-customer');
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'qarz',
-                child: Row(
-                  children: [
-                    const Icon(Icons.add_card_rounded),
-                    const SizedBox(width: 10),
-                    Text(_tr('Add Qarz', 'افزودن قرض', 'قرض زیات کړئ')),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'customer',
-                child: Row(
-                  children: [
-                    const Icon(Icons.person_add_alt_1_rounded),
-                    const SizedBox(width: 10),
-                    Text(_tr('Add Customer', 'افزودن مشتری', 'پېرودونکی زیات کړئ')),
-                  ],
-                ),
-              ),
-            ],
-          ),
           IconButton(icon: const Icon(Icons.filter_list), onPressed: _showSortOptions),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _openAddQarzPage,
+        tooltip: _tr('Add Qarz', 'افزودن قرض', 'قرض زیات کړئ'),
+        child: const Icon(Icons.add_rounded),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: StreamBuilder<List<Debt>>(
         stream: db.debtsDao.watchDebtsByShopId(shopId),
         builder: (context, snapshot) {
@@ -89,31 +61,32 @@ class _QarzDashboardScreenState extends ConsumerState<QarzDashboardScreen> {
           return Column(
             children: [
               // Hero number
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: cs.primary,
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(24),
-                    bottomRight: Radius.circular(24),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: cs.surface,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: cs.outline.withOpacity(0.18)),
                   ),
-                ),
-                child: Column(
-                  children: [
-                    Text(_tr('Total owed to you', 'کل بدهی به شما', 'ټول پور چې درته پاتې دی'), style: theme.textTheme.titleMedium?.copyWith(color: Colors.white.withOpacity(0.8))),
-                    const SizedBox(height: 8),
-                    Text('${_nf(totalOwed)} ؋', style: theme.textTheme.displayLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _buildStatChip(_na(_tr('${allDebts.length} customers with debt', '${allDebts.length} مشتری بدهکار', '${allDebts.length} پېرودونکي پوروړي دي')), Colors.white.withOpacity(0.2), Colors.white),
-                        const SizedBox(width: 8),
-                        _buildStatChip(_na(_tr('$overdueCount overdue', '$overdueCount سررسید گذشته', '$overdueCount ځنډېدلي')), AppColors.danger.withOpacity(0.3), Colors.white),
-                      ],
-                    ),
-                  ],
+                  child: Column(
+                    children: [
+                      Text(_tr('Total owed to you', 'کل بدهی به شما', 'ټول پور چې درته پاتې دی'), style: theme.textTheme.titleMedium?.copyWith(color: cs.onSurface.withOpacity(0.7))),
+                      const SizedBox(height: 8),
+                      Text('${_nf(totalOwed)} ؋', style: theme.textTheme.displaySmall?.copyWith(color: AppColors.warning, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 14),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _buildStatChip(_na(_tr('👥 ${allDebts.length} customers', '👥 ${allDebts.length} مشتری', '👥 ${allDebts.length} پېرودونکي')), cs.primary.withOpacity(0.14), cs.primary),
+                          const SizedBox(width: 8),
+                          _buildStatChip(_na(_tr('⚠️ $overdueCount overdue', '⚠️ $overdueCount سررسید گذشته', '⚠️ $overdueCount ځنډېدلي')), AppColors.danger.withOpacity(0.16), AppColors.danger),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
@@ -123,9 +96,7 @@ class _QarzDashboardScreenState extends ConsumerState<QarzDashboardScreen> {
                 child: TextField(
                   onChanged: (value) => setState(() => _searchQuery = value),
                   decoration: InputDecoration(
-                    hintText: _viewMode == 'customers'
-                        ? _tr('Search customer...', 'جستجوی مشتری...', 'پېرودونکی ولټوئ...')
-                        : _tr('Search debt by customer...', 'جستجوی قرض با نام مشتری...', 'د پېرودونکي په نوم پور ولټوئ...'),
+                    hintText: _tr('Search customer...', 'جستجوی مشتری...', 'پېرودونکی ولټوئ...'),
                     prefixIcon: const Icon(Icons.search),
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(icon: const Icon(Icons.clear), onPressed: () => setState(() => _searchQuery = ''))
@@ -134,42 +105,8 @@ class _QarzDashboardScreenState extends ConsumerState<QarzDashboardScreen> {
                   ),
                 ),
               ),
-
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: SegmentedButton<String>(
-                        segments: [
-                          ButtonSegment<String>(
-                            value: 'debts',
-                            icon: const Icon(Icons.receipt_long_rounded),
-                            label: Text(_tr('Debts', 'قرض‌ها', 'پورونه')),
-                          ),
-                          ButtonSegment<String>(
-                            value: 'customers',
-                            icon: const Icon(Icons.people_alt_rounded),
-                            label: Text(_tr('Customers', 'مشتریان', 'پېرودونکي')),
-                          ),
-                        ],
-                        selected: {_viewMode},
-                        onSelectionChanged: (selection) {
-                          setState(() {
-                            _viewMode = selection.first;
-                          });
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Customer list
               Expanded(
-                child: _viewMode == 'debts'
-                    ? _buildDebtList(allDebts, cs, theme)
-                    : _buildCustomerList(cs, theme),
+                child: _buildDebtList(allDebts, cs, theme),
               ),
             ],
           );
@@ -252,80 +189,6 @@ class _QarzDashboardScreenState extends ConsumerState<QarzDashboardScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           itemCount: displayDebts.length,
           itemBuilder: (context, index) => _buildDebtCard(displayDebts[index], cs, theme),
-        );
-      },
-    );
-  }
-
-  Widget _buildCustomerList(ColorScheme cs, ThemeData theme) {
-    final db = ref.watch(databaseProvider);
-    final shopId = ref.watch(currentShopIdProvider);
-
-    return FutureBuilder<List<Customer>>(
-      future: db.customersDao.getCustomersByShopId(shopId),
-      builder: (context, snapshot) {
-        final allCustomers = snapshot.data ?? [];
-        var displayCustomers = allCustomers;
-
-        if (_searchQuery.isNotEmpty) {
-          final q = _searchQuery.toLowerCase();
-          displayCustomers = displayCustomers.where((c) {
-            return c.name.toLowerCase().contains(q) || (c.phone?.toLowerCase().contains(q) ?? false);
-          }).toList();
-        }
-
-        displayCustomers.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-
-        if (displayCustomers.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.people_outline_rounded, size: 64, color: cs.onSurface.withOpacity(0.3)),
-                const SizedBox(height: 16),
-                Text(_tr('No customers found', 'مشتری یافت نشد', 'پېرودونکی ونه موندل شو'), style: theme.textTheme.titleLarge),
-                const SizedBox(height: 8),
-                Text(
-                  _tr('Add a customer to start tracking records', 'برای شروع، مشتری جدید اضافه کنید', 'د ریکارډ پيل لپاره پېرودونکی زیات کړئ'),
-                  style: theme.textTheme.bodyMedium?.copyWith(color: cs.onSurface.withOpacity(0.6)),
-                ),
-              ],
-            ),
-          );
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: displayCustomers.length,
-          itemBuilder: (context, index) {
-            final customer = displayCustomers[index];
-            return Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              child: ListTile(
-                leading: CircleAvatar(
-                  child: Text(customer.name.isNotEmpty ? customer.name[0].toUpperCase() : '?'),
-                ),
-                title: Text(customer.name),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (customer.phone != null && customer.phone!.isNotEmpty) Text(customer.phone!),
-                    Text(_na(_tr('Outstanding: ${_nf(customer.totalOwed)} AFN', 'باقی‌مانده: ${_nf(customer.totalOwed)} ؋', 'پاتې: ${_nf(customer.totalOwed)} ؋'))),
-                  ],
-                ),
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () => Navigator.pushNamed(
-                  context,
-                  '/qarz/detail',
-                  arguments: {
-                    'customerId': customer.id,
-                    'customerName': customer.name,
-                    'customerPhone': customer.phone,
-                  },
-                ),
-              ),
-            );
-          },
         );
       },
     );

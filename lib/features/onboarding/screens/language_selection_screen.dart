@@ -143,7 +143,7 @@ class _LanguageSelectionScreenState extends ConsumerState<LanguageSelectionScree
                       ? null
                       : () {
                           ref.read(appSettingsLocaleProvider.notifier).setLocale(Locale(_selectedLanguage!));
-                          Navigator.pushNamed(context, '/auth/phone');
+                          Navigator.pushReplacementNamed(context, '/auth/phone');
                         },
                 ),
               ),

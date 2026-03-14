@@ -7,6 +7,7 @@ import '../../../core/settings/app_locale_provider.dart';
 import '../../../core/settings/number_system_provider.dart';
 import '../../../core/settings/app_theme_mode_provider.dart';
 import '../../../core/settings/calendar_system_provider.dart';
+import '../../../core/settings/shop_profile_service.dart';
 import '../../../core/utils/exchange_rate_service.dart';
 import '../../../core/utils/number_system_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
@@ -66,30 +67,72 @@ class SettingsScreen extends ConsumerWidget {
         children: [
           // Profile Section
           _buildGroupHeader(context, _tr(context, 'Shop', 'دکان', 'دوکان'), Icons.person_outline_rounded),
-          _buildSettingTile(
-            context,
-            title: _tr(context, 'Shop Info', 'اطلاعات دکان', 'د دوکان معلومات'),
-            subtitle: authState.isGuest ? _tr(context, 'Demo Shop', 'دکان آزمایشی', 'ازمایښتي دوکان') : _tr(context, 'Active Shop', 'دکان فعال', 'فعال دوکان'),
-            leadingIcon: Icons.store_rounded,
-            onTap: () => _showShopProfile(context),
+          FutureBuilder<ShopProfile?>(
+            future: ShopProfileService.loadWithCloudFallback(),
+            builder: (context, snapshot) {
+              final profile = snapshot.data;
+              final subtitle = authState.isGuest
+                  ? _tr(context, 'Demo Shop', 'دکان آزمایشی', 'ازمایښتي دوکان')
+                  : (profile?.shopName?.isNotEmpty == true
+                      ? profile!.shopName
+                      : _tr(context, 'Active Shop', 'دکان فعال', 'فعال دوکان'));
+
+              return _buildSettingTile(
+                context,
+                title: _tr(context, 'Shop Info', 'اطلاعات دکان', 'د دوکان معلومات'),
+                subtitle: subtitle,
+                leadingIcon: Icons.store_rounded,
+                onTap: () => _showShopProfile(context, isGuest: authState.isGuest),
+              );
+            },
           ),
           const SizedBox(height: AppSpacing.l),
 
-          // Subscription Section
           _buildGroupHeader(context, _tr(context, 'Subscription', 'اشتراک', 'ګډون'), Icons.workspace_premium_rounded),
-          _buildSettingTile(
-            context,
-            title: _tr(context, 'Current Plan', 'پلن فعلی', 'اوسنی پلان'),
-            subtitle: authState.isGuest ? _tr(context, 'Demo (Limited)', 'آزمایشی (محدود)', 'ازمایښتي (محدود)') : _tr(context, 'Basic Plan', 'پلن پایه', 'بنسټیز پلان'),
-            leadingIcon: Icons.card_membership_rounded,
-            trailing: authState.isGuest
-                ? AppButton(
-                    text: _tr(context, 'Upgrade', 'ارتقا', 'ارتقا'),
-                    onPressed: () => _showUpgradeDialog(context),
-                    size: AppButtonSize.small,
-                  )
-                : const Icon(Icons.chevron_right_rounded),
-            onTap: () => Navigator.pushNamed(context, '/subscription'),
+          FutureBuilder<ShopProfile?>(
+            future: ShopProfileService.loadWithCloudFallback(),
+            builder: (context, snapshot) {
+              final profile = snapshot.data;
+              final isGuest = authState.isGuest;
+              
+              String planName = isGuest 
+                  ? _tr(context, 'Demo (Limited)', 'آزمایشی (محدود)', 'ازمایښتي (محدود)')
+                  : (profile?.subscriptionStatus == 'trial'
+                    ? _tr(context, 'Trial Plan', 'پلن آزمایشی', 'ازمایښتي پلان')
+                    : (profile?.subscriptionStatus == 'expired'
+                      ? _tr(context, 'Expired', 'منقضی شده', 'پای ته رسیدلی')
+                      : _tr(context, 'Active Plan', 'پلن فعال', 'فعال پلان')));
+              
+              String? dateSubtitle;
+              if (!isGuest && profile != null) {
+                final date = profile.subscriptionStatus == 'trial' ? profile.trialEndsAt : profile.subscriptionEndsAt;
+                if (date != null) {
+                  final calendarSystem = ref.read(appCalendarSystemProvider);
+                  final calendarType = calendarSystem == CalendarSystem.persian ? CalendarType.persian : CalendarType.gregorian;
+                  final formattedDate = NumberSystemFormatter.apply(
+                    DateFormatter.formatDate(date, calendar: calendarType, locale: Localizations.localeOf(context).languageCode),
+                  );
+                  dateSubtitle = profile.subscriptionStatus == 'expired'
+                      ? _tr(context, 'Expired on $formattedDate', 'در تاریخ $formattedDate منقضی شد', 'په $formattedDate پای ته ورسېد')
+                      : _tr(context, 'Ends on $formattedDate', 'تا تاریخ $formattedDate', 'تر $formattedDate پورې');
+                }
+              }
+
+              return _buildSettingTile(
+                context,
+                title: _tr(context, 'Current Plan', 'پلن فعلی', 'اوسنی پلان'),
+                subtitle: dateSubtitle ?? planName,
+                leadingIcon: Icons.card_membership_rounded,
+                trailing: isGuest
+                    ? AppButton(
+                        text: _tr(context, 'Upgrade', 'ارتقا', 'ارتقا'),
+                        onPressed: () => _showUpgradeDialog(context),
+                        size: AppButtonSize.small,
+                      )
+                    : const Icon(Icons.chevron_right_rounded),
+                onTap: () => Navigator.pushNamed(context, '/subscription'),
+              );
+            },
           ),
           const SizedBox(height: AppSpacing.l),
 
@@ -284,18 +327,35 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showShopProfile(BuildContext context) {
+  Future<void> _showShopProfile(BuildContext context, {required bool isGuest}) async {
+    final profile = await ShopProfileService.loadWithCloudFallback();
+
+    final shopName = profile?.shopName?.isNotEmpty == true
+        ? profile!.shopName
+        : (isGuest
+            ? _tr(context, 'Demo Shop', 'دکان آزمایشی', 'ازمایښتي دوکان')
+            : _tr(context, 'My Shop', 'دکان من', 'زما دوکان'));
+    final shopType = profile?.shopType?.isNotEmpty == true
+        ? profile!.shopType
+        : _tr(context, 'General Store', 'دکان عمومی', 'عمومي دوکان');
+    final location = profile == null
+        ? _tr(context, 'Kabul, Afghanistan', 'کابل، افغانستان', 'کابل، افغانستان')
+        : [profile.city, if ((profile.district ?? '').trim().isNotEmpty) profile.district!, 'Afghanistan']
+            .join(', ');
+
+    if (!context.mounted) return;
+
     _showAppDialog(
       context,
       title: _tr(context, 'Shop Profile', 'پروفایل دکان', 'د دوکان پېژندپاڼه'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _buildInfoRow(context, Icons.store_rounded, _tr(context, 'Shop Name', 'نام دکان', 'د دوکان نوم'), _tr(context, 'Demo Shop', 'دکان آزمایشی', 'ازمایښتي دوکان')),
+          _buildInfoRow(context, Icons.store_rounded, _tr(context, 'Shop Name', 'نام دکان', 'د دوکان نوم'), shopName),
           const SizedBox(height: AppSpacing.m),
-          _buildInfoRow(context, Icons.category_outlined, _tr(context, 'Business Type', 'نوع دکان', 'د دوکان ډول'), _tr(context, 'General Store', 'دکان عمومی', 'عمومي دوکان')),
+          _buildInfoRow(context, Icons.category_outlined, _tr(context, 'Business Type', 'نوع دکان', 'د دوکان ډول'), shopType),
           const SizedBox(height: AppSpacing.m),
-          _buildInfoRow(context, Icons.location_on_outlined, _tr(context, 'Location', 'موقعیت', 'ځای'), _tr(context, 'Kabul, Afghanistan', 'کابل، افغانستان', 'کابل، افغانستان')),
+          _buildInfoRow(context, Icons.location_on_outlined, _tr(context, 'Location', 'موقعیت', 'ځای'), location),
         ],
       ),
     );
@@ -608,6 +668,8 @@ class SettingsScreen extends ConsumerWidget {
           onPressed: () async {
             Navigator.pop(context);
             await ref.read(authProvider.notifier).signOut();
+            await ShopProfileService.clear();
+            await ShopProfileService.clearOnboardingFlag();
             if (context.mounted) {
               Navigator.pushReplacementNamed(context, '/auth');
             }

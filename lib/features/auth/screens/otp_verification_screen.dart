@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/auth/auth_provider.dart';
-import '../../../shared/theme/app_colors.dart';
+import '../../../core/database/database_provider.dart';
+import '../../../core/settings/shop_profile_service.dart';
 import '../../../shared/theme/app_layout.dart';
-import '../../../shared/widgets/app_numeric_keypad.dart';
 
 class OtpVerificationScreen extends ConsumerStatefulWidget {
   final String phone;
@@ -15,84 +16,56 @@ class OtpVerificationScreen extends ConsumerStatefulWidget {
 }
 
 class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
-  final List<String> _otpDigits = List.filled(6, '');
-  int _currentIndex = 0;
+  final _passcodeController = TextEditingController();
   bool _isLoading = false;
-  int _resendCountdown = 60;
-  bool _canResend = false;
+  bool _obscurePasscode = true;
 
   @override
-  void initState() {
-    super.initState();
-    _startResendTimer();
-  }
-
-  void _startResendTimer() {
-    setState(() { _canResend = false; _resendCountdown = 60; });
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted && _resendCountdown > 0) {
-        setState(() => _resendCountdown--);
-        _startResendTimer();
-      } else if (mounted) {
-        setState(() => _canResend = true);
-      }
-    });
-  }
-
-  void _onDigitPressed(String digit) {
-    if (_currentIndex < 6) {
-      setState(() {
-        _otpDigits[_currentIndex] = digit;
-        _currentIndex++;
-      });
-      if (_currentIndex == 6) _verifyOtp();
-    }
-  }
-
-  void _onBackspace() {
-    if (_currentIndex > 0) {
-      setState(() {
-        _currentIndex--;
-        _otpDigits[_currentIndex] = '';
-      });
-    }
+  void dispose() {
+    _passcodeController.dispose();
+    super.dispose();
   }
 
   Future<void> _verifyOtp() async {
+    final passcode = _passcodeController.text.trim();
+    if (passcode.length != 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Passcode must be 10 characters.')),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
-    final success = await ref.read(authProvider.notifier).verifyOtp(
+    // ISSUE-03 fix: verifyOtp now returns the shop profile
+    final profile = await ref.read(authProvider.notifier).verifyOtp(
       widget.phone,
-      _otpDigits.join(),
+      passcode,
     );
     if (mounted) {
       setState(() => _isLoading = false);
-      if (success) {
-        Navigator.pushReplacementNamed(context, '/onboarding/shop-setup');
-      } else {
-        setState(() {
-          _otpDigits.fillRange(0, 6, '');
-          _currentIndex = 0;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Invalid code. Try again.')),
-        );
-      }
-    }
-  }
+      if (ref.read(authProvider).isAuthenticated) {
+        // ISSUE-03 fix: Set currentShopIdProvider from the returned profile
+        if (profile != null) {
+          ref.read(currentShopIdProvider.notifier).state = profile.shopId;
+        }
 
-  Future<void> _resendOtp() async {
-    if (!_canResend) return;
-    setState(() => _isLoading = true);
-    final success = await ref.read(authProvider.notifier).signIn(widget.phone);
-    if (mounted) {
-      setState(() => _isLoading = false);
-      if (success) {
-        _startResendTimer();
+        // Determine if the user has a shop (either from profile or local onboarding flag)
+        bool hasShop = profile != null;
+        if (!hasShop) {
+          // ISSUE-10: Check local onboarding_completed flag
+          hasShop = await ShopProfileService.isOnboardingCompleted();
+        }
+
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          hasShop ? '/home' : '/onboarding/shop-setup',
+          (route) => false,
+        );
+      } else {
+        final err = ref.read(authProvider).error;
+        _passcodeController.clear();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('New code sent via WhatsApp'),
-            backgroundColor: AppColors.success,
-          ),
+          SnackBar(content: Text(err ?? 'Invalid passcode. Try again.')),
         );
       }
     }
@@ -117,66 +90,85 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: AppSpacing.l),
-              Text('Verification Code', style: theme.textTheme.displaySmall?.copyWith(fontWeight: FontWeight.bold)),
+              Text('Enter Passcode', style: theme.textTheme.displaySmall?.copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(height: AppSpacing.s),
               Text(
-                'Sent to ${widget.phone} via WhatsApp',
+                'For ${widget.phone}',
                 style: theme.textTheme.bodyMedium?.copyWith(color: cs.onSurface.withOpacity(0.6)),
               ),
               const SizedBox(height: AppSpacing.sectionGap),
 
-              // OTP boxes
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: List.generate(6, (i) {
-                  final isFocused = i == _currentIndex;
-                  final hasValue = _otpDigits[i].isNotEmpty;
-                  return Container(
-                    width: 44,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: hasValue ? cs.primary.withOpacity(0.05) : cs.surface,
-                      borderRadius: AppRadius.medium,
-                      border: Border.all(
-                        color: isFocused ? cs.primary : cs.outline.withOpacity(0.3),
-                        width: isFocused ? 2 : 1,
-                      ),
+              TextField(
+                controller: _passcodeController,
+                autofocus: true,
+                enabled: !_isLoading,
+                maxLength: 10,
+                keyboardType: TextInputType.visiblePassword,
+                textInputAction: TextInputAction.done,
+                obscureText: _obscurePasscode,
+                autocorrect: false,
+                enableSuggestions: false,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
+                  LengthLimitingTextInputFormatter(10),
+                ],
+                onSubmitted: (_) => _verifyOtp(),
+                style: theme.textTheme.titleLarge?.copyWith(
+                  letterSpacing: 2,
+                  fontWeight: FontWeight.w600,
+                ),
+                decoration: InputDecoration(
+                  counterText: '',
+                  hintText: 'Enter 10-character passcode',
+                  filled: true,
+                  fillColor: cs.surface,
+                  border: OutlineInputBorder(
+                    borderRadius: AppRadius.large,
+                    borderSide: BorderSide(color: cs.outline.withOpacity(0.3)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: AppRadius.large,
+                    borderSide: BorderSide(color: cs.outline.withOpacity(0.3)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: AppRadius.large,
+                    borderSide: BorderSide(color: cs.primary, width: 2),
+                  ),
+                  suffixIcon: IconButton(
+                    onPressed: _isLoading
+                        ? null
+                        : () => setState(() => _obscurePasscode = !_obscurePasscode),
+                    icon: Icon(
+                      _obscurePasscode ? Icons.visibility_rounded : Icons.visibility_off_rounded,
                     ),
-                    child: Center(
-                      child: Text(
-                        _otpDigits[i],
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: cs.primary,
-                        ),
-                      ),
-                    ),
-                  );
-                }),
+                  ),
+                ),
               ),
 
               const SizedBox(height: AppSpacing.sectionGap),
 
-              // Resend
               Center(
-                child: _canResend
-                    ? TextButton.icon(
-                        icon: const Icon(Icons.refresh_rounded, size: 18),
-                        onPressed: _isLoading ? null : _resendOtp,
-                        label: const Text('Resend via WhatsApp'),
-                      )
-                    : Text(
-                        'Resend in ${_resendCountdown}s',
-                        style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurface.withOpacity(0.5)),
-                      ),
+                child: Text(
+                  'Use your 10-character passcode',
+                  style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurface.withOpacity(0.6)),
+                ),
               ),
 
               const Spacer(),
 
-              // Use the shared keypad
-              AppNumericKeypad(
-                onDigitPressed: _onDigitPressed,
-                onBackspace: _onBackspace,
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _verifyOtp,
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Continue'),
+                ),
               ),
               const SizedBox(height: AppSpacing.xl),
             ],

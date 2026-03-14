@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:drift/drift.dart' show Value;
 import '../../../core/database/app_database.dart';
 import '../../../core/database/database_provider.dart';
-import '../../../core/auth/guest_mode_service.dart';
-import '../../../core/sync/sync_service.dart';
+import '../../../core/settings/calendar_system_provider.dart';
+import '../../../core/utils/date_formatter.dart';
 import '../../../core/utils/number_system_formatter.dart';
+import '../providers/pending_scanned_barcode_result_provider.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_layout.dart';
 import '../../../shared/widgets/app_empty_state.dart';
@@ -48,6 +48,13 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(appCalendarSystemProvider);
+    final pendingGlobalScan = ref.watch(pendingScannedBarcodeResultProvider);
+    if (pendingGlobalScan != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _consumePendingGlobalScanResult(pendingGlobalScan);
+      });
+    }
     final cs = Theme.of(context).colorScheme;
     final theme = Theme.of(context);
 
@@ -92,65 +99,65 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
           ),
 
           if (_mode == 'new')
-            // Search bar
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.l),
-            child: Container(
-              padding: const EdgeInsets.all(AppSpacing.m),
-              decoration: BoxDecoration(
-                color: cs.surface,
-                borderRadius: AppRadius.large,
-                border: Border.all(color: cs.outline.withOpacity(0.1)),
-              ),
-              child: Column(
-              children: [
-                Row(
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.l),
+              child: Container(
+                padding: const EdgeInsets.all(AppSpacing.m),
+                decoration: BoxDecoration(
+                  color: cs.surface,
+                  borderRadius: AppRadius.large,
+                  border: Border.all(color: cs.outline.withOpacity(0.1)),
+                ),
+                child: Column(
                   children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _searchController,
-                        onChanged: _onSearch,
-                        decoration: InputDecoration(
-                          hintText: _tr('Search products...', 'جستجوی محصول...', 'د محصول لټون...'),
-                          prefixIcon: const Icon(Icons.search_rounded),
-                          suffixIcon: _searchQuery.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear_rounded),
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    setState(() {
-                                      _searchQuery = '';
-                                      _searchResults = [];
-                                    });
-                                  },
-                                )
-                              : null,
-                          filled: true,
-                          border: OutlineInputBorder(
-                            borderRadius: AppRadius.medium,
-                            borderSide: BorderSide.none,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _searchController,
+                            onChanged: _onSearch,
+                            decoration: InputDecoration(
+                              hintText: _tr('Search products...', 'جستجوی محصول...', 'د محصول لټون...'),
+                              prefixIcon: const Icon(Icons.search_rounded),
+                              suffixIcon: _searchQuery.isNotEmpty
+                                  ? IconButton(
+                                      icon: const Icon(Icons.clear_rounded),
+                                      onPressed: () {
+                                        _searchController.clear();
+                                        setState(() {
+                                          _searchQuery = '';
+                                          _searchResults = [];
+                                        });
+                                      },
+                                    )
+                                  : null,
+                              filled: true,
+                              border: OutlineInputBorder(
+                                borderRadius: AppRadius.medium,
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.m),
-                    SizedBox(
-                      height: 52,
-                      width: 52,
-                      child: OutlinedButton(
-                        onPressed: _openBarcodeScanner,
-                        style: OutlinedButton.styleFrom(
-                          padding: EdgeInsets.zero,
-                          shape: RoundedRectangleBorder(borderRadius: AppRadius.medium),
+                        const SizedBox(width: AppSpacing.m),
+                        SizedBox(
+                          height: 52,
+                          width: 52,
+                          child: OutlinedButton(
+                            onPressed: _openBarcodeScanner,
+                            style: OutlinedButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              shape: RoundedRectangleBorder(borderRadius: AppRadius.medium),
+                            ),
+                            child: const Icon(Icons.qr_code_scanner_rounded),
+                          ),
                         ),
-                        child: const Icon(Icons.qr_code_scanner_rounded),
-                      ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
-          ),
 
           // Product list / history list
           Expanded(
@@ -178,10 +185,13 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
       bottomNavigationBar: _mode != 'new' || _cart.isEmpty
           ? null
           : SafeArea(
+              minimum: const EdgeInsets.fromLTRB(10, 0, 10, AppSpacing.l),
               child: Container(
                 padding: const EdgeInsets.all(AppSpacing.l),
                 decoration: BoxDecoration(
                   color: cs.surface,
+                  borderRadius: AppRadius.xLarge,
+                  border: Border.all(color: cs.outline.withOpacity(0.12)),
                   boxShadow: [
                     BoxShadow(
                       color: cs.onSurface.withOpacity(0.05),
@@ -256,8 +266,8 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
             title: _tr('No sales yet', 'هنوز فروشی ثبت نشده', 'لا تر اوسه پلور نشته'),
             description: _tr('Record a new sale to see history here', 'برای دیدن تاریخچه، یک فروش جدید ثبت کنید', 'دلته د تاریخچې لپاره نوی پلور ثبت کړئ'),
             icon: Icons.receipt_long_rounded,
-            actionText: _tr('Start New Sale', 'شروع فروش جدید', 'نوی پلور پیل کړئ'),
-            onActionPressed: () => setState(() => _mode = 'new'),
+            actionLabel: _tr('Start New Sale', 'شروع فروش جدید', 'نوی پلور پیل کړئ'),
+            onAction: () => setState(() => _mode = 'new'),
           );
         }
 
@@ -300,7 +310,7 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
       case 'credit':
         return _tr('Credit', 'قرضی', 'قرض');
       case 'mixed':
-        return _tr('Mixed', 'ترکیبی', 'ګډ');
+        return _tr('Split', 'ترکیبی', 'ګډ');
       case 'cash':
       default:
         return _tr('Cash', 'نقدی', 'نغدي');
@@ -308,9 +318,9 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
   }
 
   String _formatSaleDate(DateTime dt) {
-    final hh = dt.hour.toString().padLeft(2, '0');
-    final mm = dt.minute.toString().padLeft(2, '0');
-    return '${dt.year}/${dt.month.toString().padLeft(2, '0')}/${dt.day.toString().padLeft(2, '0')} $hh:$mm';
+    final system = ref.read(appCalendarSystemProvider);
+    final calendarType = system == CalendarSystem.persian ? CalendarType.persian : CalendarType.gregorian;
+    return DateFormatter.formatDateTime(dt, calendar: calendarType, locale: _lang);
   }
 
   Future<void> _openSaleDetails(Sale sale) async {
@@ -318,34 +328,93 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
     final items = await db.salesDao.getSaleItems(sale.id);
     if (!mounted) return;
 
+    final cs = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+
     showModalBottomSheet(
       context: context,
       showDragHandle: true,
+      isScrollControlled: true,
       builder: (context) {
         return SafeArea(
           child: ListView(
             shrinkWrap: true,
             padding: const EdgeInsets.fromLTRB(AppSpacing.l, AppSpacing.s, AppSpacing.l, AppSpacing.l),
             children: [
-              Text(_tr('Sale Details', 'جزئیات فروش', 'د پلور جزییات'), style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: AppSpacing.s),
-              Text(_tr('Date: ${_formatSaleDate(sale.createdAt)}', 'تاریخ: ${_formatSaleDate(sale.createdAt)}', 'نېټه: ${_formatSaleDate(sale.createdAt)}')),
-              Text(_tr('Payment: ${_paymentMethodLabel(sale.paymentMethod)}', 'پرداخت: ${_paymentMethodLabel(sale.paymentMethod)}', 'تادیه: ${_paymentMethodLabel(sale.paymentMethod)}')),
+              Text(_tr('Sale Details', 'جزئیات فروش', 'د پلور جزییات'), style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
               const SizedBox(height: AppSpacing.m),
-              ...items.map((item) => ListTile(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(item.productNameSnapshot),
-                    subtitle: Text(_tr('Qty: ${_nf(item.quantity)} × ${_nf(item.unitPrice)}', 'تعداد: ${_nf(item.quantity)} × ${_nf(item.unitPrice)}', 'شمېر: ${_nf(item.quantity)} × ${_nf(item.unitPrice)}')),
-                    trailing: Text('${_nf(item.subtotal)} ${_tr('AFN', '؋', '؋')}'),
-                  )),
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.m),
+                decoration: BoxDecoration(
+                  color: cs.surface,
+                  borderRadius: AppRadius.medium,
+                  border: Border.all(color: cs.outline.withOpacity(0.2)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(_tr('Date: ${_formatSaleDate(sale.createdAt)}', 'تاریخ: ${_formatSaleDate(sale.createdAt)}', 'نېټه: ${_formatSaleDate(sale.createdAt)}')),
+                    const SizedBox(height: 6),
+                    Text(_tr('Payment: ${_paymentMethodLabel(sale.paymentMethod)}', 'پرداخت: ${_paymentMethodLabel(sale.paymentMethod)}', 'تادیه: ${_paymentMethodLabel(sale.paymentMethod)}')),
+                    const SizedBox(height: AppSpacing.s),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.warning.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        _tr('Total: ${_nf(sale.totalAfn)} ${_tr('AFN', '؋', '؋')}', 'مجموع: ${_nf(sale.totalAfn)} ${_tr('AFN', '؋', '؋')}', 'ټول: ${_nf(sale.totalAfn)} ${_tr('AFN', '؋', '؋')}'),
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: AppColors.warning,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.m),
+              ...items.map(
+                (item) => Container(
+                  margin: const EdgeInsets.only(bottom: AppSpacing.s),
+                  padding: const EdgeInsets.all(AppSpacing.s),
+                  decoration: BoxDecoration(
+                    color: cs.surface,
+                    borderRadius: AppRadius.medium,
+                    border: Border.all(color: cs.outline.withOpacity(0.15)),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(item.productNameSnapshot, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 4),
+                            Text(
+                              _tr('Qty: ${_nf(item.quantity)} × ${_nf(item.unitPrice)}', 'تعداد: ${_nf(item.quantity)} × ${_nf(item.unitPrice)}', 'شمېر: ${_nf(item.quantity)} × ${_nf(item.unitPrice)}'),
+                              style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.s),
+                      Text(
+                        '${_nf(item.subtotal)} ${_tr('AFN', '؋', '؋')}',
+                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               const Divider(),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(_tr('Total', 'مجموع', 'ټول')),
                 trailing: Text(
                   '${_nf(sale.totalAfn)} ${_tr('AFN', '؋', '؋')}',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: AppColors.warning),
                 ),
               ),
             ],
@@ -669,6 +738,54 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
               ),
             );
           }
+        }
+      }
+    }
+  }
+
+  Future<void> _consumePendingGlobalScanResult(Map<String, dynamic> result) async {
+    ref.read(pendingScannedBarcodeResultProvider.notifier).state = null;
+    if (!mounted) return;
+
+    final productId = result['productId']?.toString();
+    if (productId != null && productId.isNotEmpty) {
+      final db = ref.read(databaseProvider);
+      final product = await db.productsDao.getProductById(productId);
+      if (product != null && mounted) {
+        _addToCart(product);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_tr('${product.nameDari} added to cart', '${product.nameDari} به سبد اضافه شد', '${product.nameDari} ټوکرۍ ته زیات شو')),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+      return;
+    }
+
+    final notFound = result['notFound'] == true;
+    if (notFound && mounted) {
+      final barcode = result['barcode']?.toString();
+      final created = await Navigator.pushNamed(
+        context,
+        '/inventory/add-product',
+        arguments: {
+          'barcode': barcode,
+        },
+      );
+
+      if (created == true && barcode != null && mounted) {
+        final db = ref.read(databaseProvider);
+        final shopId = ref.read(currentShopIdProvider);
+        final added = await db.productsDao.getProductByBarcode(shopId, barcode);
+        if (added != null && mounted) {
+          _addToCart(added);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(_tr('${added.nameDari} was added and moved to cart', '${added.nameDari} اضافه شد و به سبد رفت', '${added.nameDari} زیات شو او ټوکرۍ ته ولاړ')),
+              backgroundColor: AppColors.success,
+            ),
+          );
         }
       }
     }

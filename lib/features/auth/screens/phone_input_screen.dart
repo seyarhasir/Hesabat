@@ -15,6 +15,16 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
   bool _isLoading = false;
   String? _error;
 
+  String _normalizeDigits(String input) {
+    const fa = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+    const ar = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+    var out = input;
+    for (var i = 0; i < 10; i++) {
+      out = out.replaceAll(fa[i], '$i').replaceAll(ar[i], '$i');
+    }
+    return out;
+  }
+
   @override
   void dispose() {
     _phoneController.dispose();
@@ -29,24 +39,34 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
       return;
     }
 
-    final cleanPhone = phone.replaceAll(RegExp(r'[^\d]'), '');
+    final cleanPhone = _normalizeDigits(phone).replaceAll(RegExp(r'[^0-9]'), '');
 
-    if (!RegExp(r'^07\d{8}$').hasMatch(cleanPhone)) {
-      setState(() => _error = 'Enter a valid Afghan number (07X XXX XXXX)');
+    String? national;
+    if (cleanPhone.startsWith('93') && cleanPhone.length == 11) {
+      national = cleanPhone.substring(2);
+    } else if (cleanPhone.startsWith('07') && cleanPhone.length == 10) {
+      national = cleanPhone.substring(1);
+    } else if (cleanPhone.startsWith('7') && cleanPhone.length == 9) {
+      national = cleanPhone;
+    }
+
+    if (national == null || !RegExp(r'^7\d{8}$').hasMatch(national)) {
+      setState(() => _error = 'Invalid Afghan number format');
       return;
     }
 
     setState(() { _isLoading = true; _error = null; });
 
-    final fullPhone = '+93${cleanPhone.substring(1)}';
+    final fullPhone = '+93$national';
     final success = await ref.read(authProvider.notifier).signIn(fullPhone);
 
     if (mounted) {
       setState(() => _isLoading = false);
       if (success) {
-        Navigator.pushNamed(context, '/auth/otp', arguments: {'phone': fullPhone});
+        Navigator.pushReplacementNamed(context, '/auth/otp', arguments: {'phone': fullPhone});
       } else {
-        setState(() => _error = 'Account not found. Contact sales agent.');
+        final err = ref.read(authProvider).error;
+        setState(() => _error = err ?? 'Account not found. Contact sales agent.');
       }
     }
   }
@@ -73,7 +93,7 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
               Text('Enter Your Phone', style: theme.textTheme.displaySmall),
               const SizedBox(height: 8),
               Text(
-                'We\'ll send a code via WhatsApp',
+                'Continue with your account passcode',
                 style: theme.textTheme.bodyMedium,
               ),
               const SizedBox(height: 32),
@@ -108,7 +128,7 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
                       child: TextField(
                         controller: _phoneController,
                         keyboardType: TextInputType.phone,
-                        maxLength: 10,
+                        maxLength: 12,
                         style: theme.textTheme.bodyLarge?.copyWith(
                           fontWeight: FontWeight.w500,
                           letterSpacing: 1,
@@ -122,7 +142,16 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
                           counterText: '',
                           filled: false,
                         ),
-                        onChanged: (_) => setState(() => _error = null),
+                        onChanged: (v) {
+                          final normalized = _normalizeDigits(v);
+                          if (normalized != v) {
+                            _phoneController.value = TextEditingValue(
+                              text: normalized,
+                              selection: TextSelection.collapsed(offset: normalized.length),
+                            );
+                          }
+                          setState(() => _error = null);
+                        },
                       ),
                     ),
                   ],
@@ -150,7 +179,7 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Your number must be registered by our sales team.',
+                        'Use your registered number and passcode from sales/admin.',
                         style: theme.textTheme.bodySmall,
                       ),
                     ),

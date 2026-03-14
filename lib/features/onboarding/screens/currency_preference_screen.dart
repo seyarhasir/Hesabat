@@ -13,12 +13,25 @@ class CurrencyPreferenceScreen extends ConsumerStatefulWidget {
 class _CurrencyPreferenceScreenState extends ConsumerState<CurrencyPreferenceScreen> {
   String _primaryCurrency = 'AFN';
   String? _secondaryCurrency;
+  Map<String, dynamic>? _onboardingData;
+  bool _argsLoaded = false;
 
   final _currencies = const [
     {'code': 'AFN', 'name': 'Afghan Afghani', 'symbol': '\u060B', 'flag': '\u{1F1E6}\u{1F1EB}'},
     {'code': 'USD', 'name': 'US Dollar', 'symbol': '\$', 'flag': '\u{1F1FA}\u{1F1F8}'},
     {'code': 'PKR', 'name': 'Pakistani Rupee', 'symbol': '\u20A8', 'flag': '\u{1F1F5}\u{1F1F0}'},
   ];
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_argsLoaded) return;
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is Map<String, dynamic>) {
+      _onboardingData = args;
+    }
+    _argsLoaded = true;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -146,7 +159,14 @@ class _CurrencyPreferenceScreenState extends ConsumerState<CurrencyPreferenceScr
                 width: double.infinity,
                 child: AppButton(
                   text: 'Continue',
-                  onPressed: () => Navigator.pushNamed(context, '/onboarding/first-product'),
+                  onPressed: () => Navigator.pushReplacementNamed(
+                    context,
+                    '/onboarding/first-product',
+                    arguments: {
+                      ...?_onboardingData,
+                      'currency': _primaryCurrency,
+                    },
+                  ),
                 ),
               ),
               const SizedBox(height: 24),

@@ -23,6 +23,7 @@ class _SaleReviewScreenState extends ConsumerState<SaleReviewScreen> {
   String _paymentMethod = 'cash';
   String _selectedCurrency = 'AFN';
   double _discount = 0;
+  double _mixedPaidAfn = 0;
   String? _selectedCustomerId;
   String? _selectedCustomerName;
   bool _isSaving = false;
@@ -123,26 +124,77 @@ class _SaleReviewScreenState extends ConsumerState<SaleReviewScreen> {
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton.icon(
+                  child: OutlinedButton(
                     onPressed: _openCustomerPicker,
-                    icon: const Icon(Icons.person_outline_rounded),
-                    label: Text(_selectedCustomerName ?? _tr('Customer', 'مشتری', 'پېرودونکی')),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(56),
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.person_outline_rounded),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            _selectedCustomerName ?? _tr('Customer', 'مشتری', 'پېرودونکی'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            softWrap: false,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: OutlinedButton.icon(
+                  child: OutlinedButton(
                     onPressed: _openCurrencySelector,
-                    icon: const Icon(Icons.currency_exchange_rounded),
-                    label: Text(_selectedCurrency),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(56),
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.currency_exchange_rounded),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            _selectedCurrency,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            softWrap: false,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: OutlinedButton.icon(
+                  child: OutlinedButton(
                     onPressed: _openDiscountEntry,
-                    icon: const Icon(Icons.percent_rounded),
-                    label: Text(_tr('Discount', 'تخفیف', 'تخفیف')),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(56),
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.percent_rounded),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            _tr('Discount', 'تخفیف', 'تخفیف'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            softWrap: false,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -204,11 +256,59 @@ class _SaleReviewScreenState extends ConsumerState<SaleReviewScreen> {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        _paymentChip('cash', Icons.payments_rounded),
-                        _paymentChip('credit', Icons.person_outline_rounded),
-                        _paymentChip('mixed', Icons.swap_horiz_rounded),
+                        _paymentChip('cash', Icons.payments_rounded, totalAfn: totalAfn),
+                        _paymentChip('credit', Icons.person_outline_rounded, totalAfn: totalAfn),
+                        _paymentChip('mixed', Icons.swap_horiz_rounded, totalAfn: totalAfn),
                       ],
                     ),
+                    if (_paymentMethod == 'mixed')
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _tr(
+                                'Part paid now, remaining goes to Qarz.',
+                                'بخشی نقد پرداخت می‌شود و باقی به قرض می‌رود.',
+                                'یوه برخه اوس ورکول کېږي او پاتې قرض ته ځي.',
+                              ),
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                            const SizedBox(height: 6),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(_tr('Paid now', 'پرداخت فعلی', 'اوس تادیه شوی')),
+                                Text(
+                                  '${_nf(_afnToSelected(_mixedPaidAfn), d: 2)} ${_currencySymbol(_selectedCurrency)}',
+                                  style: const TextStyle(fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(_tr('Remaining debt', 'باقی‌مانده قرض', 'پاتې قرض')),
+                                Text(
+                                  '${_nf(_afnToSelected((totalAfn - _mixedPaidAfn).clamp(0.0, totalAfn)), d: 2)} ${_currencySymbol(_selectedCurrency)}',
+                                  style: const TextStyle(fontWeight: FontWeight.w700),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: TextButton.icon(
+                                onPressed: () => _openMixedPaymentEntry(totalAfn),
+                                icon: const Icon(Icons.edit_rounded),
+                                label: Text(_tr('Edit split', 'ویرایش تقسیم', 'وېش سمول')),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     if (_paymentMethod == 'credit' && _selectedCustomerName != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
@@ -246,9 +346,84 @@ class _SaleReviewScreenState extends ConsumerState<SaleReviewScreen> {
       case 'credit':
         return _tr('Qarz', 'قرض', 'پور');
       case 'mixed':
-        return _tr('Mixed', 'مختلط', 'ګډ');
+        return _tr('Split', 'ترکیبی', 'ګډ');
       default:
         return _tr('Cash', 'نقد', 'نغد');
+    }
+  }
+
+  Future<void> _openMixedPaymentEntry(double totalAfn) async {
+    final totalSelected = _afnToSelected(totalAfn);
+    final initialSelected = _afnToSelected(_mixedPaidAfn);
+    final controller = TextEditingController(text: _nf(initialSelected, d: 2));
+
+    final value = await showModalBottomSheet<double>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 8,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _tr('Split payment', 'پرداخت ترکیبی', 'ګډه تادیه'),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _tr(
+                    'Enter amount paid now',
+                    'مبلغ پرداخت فعلی را وارد کنید',
+                    'اوس ورکړل شوې اندازه ولیکئ',
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: controller,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  labelText: _tr('Paid now', 'پرداخت فعلی', 'اوس تادیه شوی'),
+                  suffixText: _selectedCurrency,
+                  helperText: _tr(
+                    'Max: ${_nf(totalSelected, d: 2)} ${_selectedCurrency}',
+                    'حداکثر: ${_nf(totalSelected, d: 2)} ${_selectedCurrency}',
+                    'اعظمي: ${_nf(totalSelected, d: 2)} ${_selectedCurrency}',
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () {
+                    final parsed = double.tryParse(controller.text.trim()) ?? 0;
+                    final clamped = parsed.clamp(0.0, totalSelected);
+                    Navigator.pop(context, _selectedToAfn(clamped.toDouble()));
+                  },
+                  child: Text(_tr('Confirm', 'تایید', 'تایید')),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (value != null && mounted) {
+      setState(() => _mixedPaidAfn = value);
     }
   }
 
@@ -341,7 +516,7 @@ class _SaleReviewScreenState extends ConsumerState<SaleReviewScreen> {
               ListTile(title: Text(_tr('Payment Method', 'روش پرداخت', 'د تادیې طریقه'))),
               tile('cash', _tr('Cash', 'نقد', 'نغد'), Icons.payments_rounded),
               tile('credit', _tr('Qarz', 'قرض', 'پور'), Icons.person_outline_rounded),
-              tile('mixed', _tr('Mixed', 'مختلط', 'ګډ'), Icons.swap_horiz_rounded),
+              tile('mixed', _tr('Split', 'ترکیبی', 'ګډ'), Icons.swap_horiz_rounded),
             ],
           ),
         );
@@ -356,13 +531,44 @@ class _SaleReviewScreenState extends ConsumerState<SaleReviewScreen> {
     }
   }
 
-  Widget _paymentChip(String method, IconData icon) {
+  Widget _paymentChip(String method, IconData icon, {required double totalAfn}) {
+    final cs = Theme.of(context).colorScheme;
+    final selected = _paymentMethod == method;
+    final fg = selected ? cs.primary : cs.onSurface.withOpacity(0.9);
+
     return ChoiceChip(
-      selected: _paymentMethod == method,
-      label: Text(_labelForMethod(method)),
-      avatar: Icon(icon, size: 18),
-      onSelected: (selected) async {
-        if (!selected) return;
+      selected: selected,
+      showCheckmark: false,
+      label: Text(
+        _labelForMethod(method),
+        style: TextStyle(
+          color: fg,
+          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+        ),
+      ),
+      avatar: Icon(icon, size: 18, color: fg),
+      selectedColor: cs.primary.withOpacity(0.18),
+      backgroundColor: cs.surface,
+      side: BorderSide(
+        color: selected ? cs.primary.withOpacity(0.65) : cs.outline.withOpacity(0.28),
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+      onSelected: (isSelected) async {
+        if (!isSelected) return;
+
+        if (method == 'mixed') {
+          final previous = _paymentMethod;
+          setState(() => _paymentMethod = method);
+          await _openMixedPaymentEntry(totalAfn);
+          if (_mixedPaidAfn <= 0 && totalAfn > 0) {
+            setState(() => _mixedPaidAfn = (totalAfn / 2));
+          }
+          if (previous == 'credit' && _selectedCustomerId == null) {
+            await _openCustomerPicker();
+          }
+          return;
+        }
+
         setState(() => _paymentMethod = method);
         if (method == 'credit' && _selectedCustomerId == null) {
           await _openCustomerPicker();
@@ -494,6 +700,19 @@ class _SaleReviewScreenState extends ConsumerState<SaleReviewScreen> {
       }
     }
 
+    final mixedRemaining = (total - _mixedPaidAfn).clamp(0.0, total);
+    if (_paymentMethod == 'mixed' && mixedRemaining > 0 && _selectedCustomerId == null) {
+      await _openCustomerPicker();
+      if (_selectedCustomerId == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(_tr('Select a customer for remaining Qarz', 'برای باقی‌مانده قرض مشتری را انتخاب کنید', 'د پاتې قرض لپاره پېرودونکی وټاکئ'))),
+          );
+        }
+        return;
+      }
+    }
+
     final canProceed = await GuestModeService.canAddSale();
     if (!canProceed) {
       if (mounted) {
@@ -515,6 +734,8 @@ class _SaleReviewScreenState extends ConsumerState<SaleReviewScreen> {
     final exchangeRateToAfn = _selectedCurrency == 'AFN'
         ? 1.0
         : (totalInSelected > 0 ? (total / totalInSelected) : 1.0);
+    final creditAmount = _paymentMethod == 'credit' ? total : (_paymentMethod == 'mixed' ? mixedRemaining.toDouble() : 0.0);
+    final isCreditSale = creditAmount > 0;
     final syncEnabled = !(await GuestModeService.isGuestMode());
     final nowIso = DateTime.now().toIso8601String();
 
@@ -530,7 +751,7 @@ class _SaleReviewScreenState extends ConsumerState<SaleReviewScreen> {
           paymentMethod: Value(_paymentMethod),
           currency: Value(_selectedCurrency),
           exchangeRate: Value(exchangeRateToAfn),
-          isCredit: Value(_paymentMethod == 'credit'),
+          isCredit: Value(isCreditSale),
         ),
       );
 
@@ -550,7 +771,7 @@ class _SaleReviewScreenState extends ConsumerState<SaleReviewScreen> {
             'payment_method': _paymentMethod,
             'currency': _selectedCurrency,
             'exchange_rate': exchangeRateToAfn,
-            'is_credit': _paymentMethod == 'credit',
+            'is_credit': isCreditSale,
             'created_at': nowIso,
             'updated_at': nowIso,
           },
@@ -626,7 +847,7 @@ class _SaleReviewScreenState extends ConsumerState<SaleReviewScreen> {
         }
       }
 
-      if (_paymentMethod == 'credit' && _selectedCustomerId != null) {
+      if (isCreditSale && _selectedCustomerId != null) {
         final debtId = 'local_debt_${DateTime.now().millisecondsSinceEpoch}';
         await db.debtsDao.insertDebt(
           DebtsCompanion(
@@ -634,9 +855,9 @@ class _SaleReviewScreenState extends ConsumerState<SaleReviewScreen> {
             shopId: Value(shopId),
             customerId: Value(_selectedCustomerId!),
             saleId: Value(saleId),
-            amountOriginal: Value(total),
+            amountOriginal: Value(creditAmount),
             amountPaid: const Value(0),
-            amountRemaining: Value(total),
+            amountRemaining: Value(creditAmount),
             status: const Value('open'),
           ),
         );
@@ -652,9 +873,9 @@ class _SaleReviewScreenState extends ConsumerState<SaleReviewScreen> {
               'shop_id': shopId,
               'customer_id': _selectedCustomerId,
               'sale_id': saleId,
-              'amount_original': total,
+              'amount_original': creditAmount,
               'amount_paid': 0,
-              'amount_remaining': total,
+              'amount_remaining': creditAmount,
               'status': 'open',
               'created_at': nowIso,
               'updated_at': nowIso,
@@ -664,8 +885,8 @@ class _SaleReviewScreenState extends ConsumerState<SaleReviewScreen> {
 
         final customer = await db.customersDao.getCustomerById(_selectedCustomerId!);
         if (customer != null) {
-          final updatedTotalOwed = customer.totalOwed + total;
-          await db.customersDao.updateTotalOwed(customer.id, customer.totalOwed + total);
+          final updatedTotalOwed = customer.totalOwed + creditAmount;
+          await db.customersDao.updateTotalOwed(customer.id, updatedTotalOwed);
           await db.customersDao.updateLastInteraction(customer.id);
 
           if (syncEnabled) {

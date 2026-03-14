@@ -14,8 +14,6 @@ class ShopSetupScreen extends ConsumerStatefulWidget {
 class _ShopSetupScreenState extends ConsumerState<ShopSetupScreen> {
   final _shopNameController = TextEditingController();
   String? _selectedShopType;
-  String? _selectedCity;
-  String? _selectedDistrict;
 
   final _shopTypes = const [
     {'code': 'grocery', 'name': 'Grocery', 'icon': '\u{1F6D2}'},
@@ -28,13 +26,9 @@ class _ShopSetupScreenState extends ConsumerState<ShopSetupScreen> {
     {'code': 'general', 'name': 'General', 'icon': '\u{1F3EA}'},
   ];
 
-  final _cities = const ['Kabul', 'Herat', 'Mazar-i-Sharif', 'Kandahar', 'Jalalabad', 'Other'];
-  final _kabulDistricts = const ['Karte Char', 'Wazir Akbar Khan', 'Kote Sangi', 'Taimani', 'Shahr-e-Naw', 'Deh Afghanan', 'Other'];
-
   bool get _isValid =>
       _shopNameController.text.isNotEmpty &&
-      _selectedShopType != null &&
-      _selectedCity != null;
+      _selectedShopType != null;
 
   @override
   Widget build(BuildContext context) {
@@ -103,29 +97,6 @@ class _ShopSetupScreenState extends ConsumerState<ShopSetupScreen> {
                           );
                         }).toList(),
                       ),
-
-                      const SizedBox(height: 24),
-
-                      Text('City', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 8),
-                      DropdownButtonFormField<String>(
-                        value: _selectedCity,
-                        hint: const Text('Select city'),
-                        items: _cities.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                        onChanged: (v) => setState(() { _selectedCity = v; _selectedDistrict = null; }),
-                      ),
-
-                      if (_selectedCity == 'Kabul') ...[
-                        const SizedBox(height: 16),
-                        Text('District', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-                        const SizedBox(height: 8),
-                        DropdownButtonFormField<String>(
-                          value: _selectedDistrict,
-                          hint: const Text('Select district'),
-                          items: _kabulDistricts.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
-                          onChanged: (v) => setState(() => _selectedDistrict = v),
-                        ),
-                      ],
                     ],
                   ),
                 ),
@@ -137,7 +108,16 @@ class _ShopSetupScreenState extends ConsumerState<ShopSetupScreen> {
                 width: double.infinity,
                 child: AppButton(
                   text: 'Continue',
-                  onPressed: _isValid ? () => Navigator.pushNamed(context, '/onboarding/city-district') : null,
+                  onPressed: _isValid
+                      ? () => Navigator.pushReplacementNamed(
+                            context,
+                            '/onboarding/city-district',
+                            arguments: {
+                              'shopName': _shopNameController.text.trim(),
+                              'shopType': _selectedShopType ?? 'general',
+                            },
+                          )
+                      : null,
                 ),
               ),
               const SizedBox(height: 24),

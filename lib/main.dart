@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/database/database_provider.dart';
 import 'core/network/connectivity_service.dart';
@@ -31,6 +32,7 @@ import 'features/qarz/screens/customer_debt_detail_screen.dart';
 import 'features/qarz/screens/record_payment_screen.dart';
 import 'features/qarz/screens/add_customer_screen.dart';
 import 'features/qarz/screens/add_qarz_screen.dart';
+import 'features/qarz/screens/customers_screen.dart';
 import 'features/inventory/screens/product_list_screen.dart';
 import 'features/inventory/screens/add_edit_product_screen.dart';
 import 'features/inventory/screens/stock_take_screen.dart';
@@ -46,12 +48,45 @@ import 'features/settings/screens/subscription_screen.dart';
 import 'features/sync/screens/conflict_resolution_screen.dart';
 import 'shared/theme/app_theme.dart';
 import 'shared/l10n/generated/app_localizations.dart';
+import 'package:sqlite3_flutter_libs/sqlite3_flutter_libs.dart';
 
 void main() async {
+  setupSqlCipher();
   print('HESABAT: main() started');
   // 1. Core Flutter engine bootstrap
   WidgetsFlutterBinding.ensureInitialized();
   print('HESABAT: Flutter initialized');
+
+  try {
+    await dotenv.load(fileName: '.env');
+    print('HESABAT: .env loaded');
+  } catch (e) {
+    print('HESABAT: .env load failed: $e');
+  }
+
+  try {
+    final envUrl = dotenv.env['SUPABASE_URL']?.trim();
+    final envAnonKey = dotenv.env['SUPABASE_ANON_KEY']?.trim();
+    final supabaseUrl = (envUrl != null && envUrl.isNotEmpty)
+        ? envUrl
+        : const String.fromEnvironment('SUPABASE_URL', defaultValue: 'https://your-project.supabase.co');
+    final supabaseAnonKey = (envAnonKey != null && envAnonKey.isNotEmpty)
+        ? envAnonKey
+        : const String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: 'your-anon-key');
+
+    if (supabaseUrl.contains('your-project.supabase.co') || supabaseAnonKey == 'your-anon-key') {
+      throw Exception('Supabase credentials are missing. Set SUPABASE_URL and SUPABASE_ANON_KEY in .env');
+    }
+
+    print('HESABAT: Initializing Supabase...');
+    await Supabase.initialize(
+      url: supabaseUrl,
+      anonKey: supabaseAnonKey,
+    ).timeout(const Duration(seconds: 6));
+    print('HESABAT: Supabase initialized');
+  } catch (e) {
+    print('HESABAT: Supabase init failed: $e');
+  }
 
   // 2. Immediate rendering of the First Frame
   final container = ProviderContainer();
@@ -68,17 +103,7 @@ void main() async {
 
 Future<void> _bootstrapApp(ProviderContainer container) async {
   print('HESABAT: Bootstrap task running');
-  // 1. Core infrastructure (Supabase first as services depend on it)
-  try {
-    print('HESABAT: Initializing Supabase...');
-    await Supabase.initialize(
-      url: const String.fromEnvironment('SUPABASE_URL', defaultValue: 'https://your-project.supabase.co'),
-      anonKey: const String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: 'your-anon-key'),
-    ).timeout(const Duration(seconds: 4));
-    print('HESABAT: Supabase initialized');
-  } catch (e) {
-    print('HESABAT: Supabase init skipped/failed: $e');
-  }
+  // 1. Core infrastructure (Supabase initialized before runApp)
 
   try {
     print('HESABAT: Initializing Connectivity...');
@@ -217,6 +242,8 @@ class HesabatApp extends ConsumerWidget {
             return MaterialPageRoute(builder: (_) => const AddCustomerScreen());
           case '/qarz/add-debt':
             return MaterialPageRoute(builder: (_) => const AddQarzScreen());
+          case '/customers':
+            return MaterialPageRoute(builder: (_) => const CustomersScreen());
           case '/inventory':
             return MaterialPageRoute(builder: (_) => const ProductListScreen());
           case '/inventory/add-product':

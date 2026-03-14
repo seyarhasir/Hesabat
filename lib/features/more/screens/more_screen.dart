@@ -97,6 +97,14 @@ class MoreScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.l),
+          sectionTitle(_tr(lang, 'People', 'افراد', 'خلک')),
+          navCard(
+            icon: Icons.people_alt_rounded,
+            title: _tr(lang, 'Customers', 'مشتریان', 'پېرودونکي'),
+            subtitle: _tr(lang, 'All customers, profiles, and history', 'همه مشتریان، پروفایل و تاریخچه', 'ټول پېرودونکي، پروفایل او تاریخچه'),
+            onTap: () => Navigator.pushNamed(context, '/customers'),
+          ),
+          const SizedBox(height: AppSpacing.l),
           sectionTitle(_tr(lang, 'Operations', 'عملیات', 'عملیات')),
           navCard(
             icon: Icons.inventory_2_rounded,

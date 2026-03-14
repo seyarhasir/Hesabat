@@ -1,55 +1,188 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/auth/auth_provider.dart';
 import '../../../core/utils/number_system_formatter.dart';
+import '../../../shared/theme/app_colors.dart';
+import '../../../core/settings/shop_profile_service.dart';
+import '../../../core/settings/calendar_system_provider.dart';
+import '../../../core/utils/date_formatter.dart';
 
-class SubscriptionScreen extends StatelessWidget {
+class SubscriptionScreen extends ConsumerWidget {
   const SubscriptionScreen({super.key});
 
   String _tr(String lang, String en, String fa, [String? ps]) => lang == 'fa' ? fa : (lang == 'ps' ? (ps ?? fa) : en);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final lang = Localizations.localeOf(context).languageCode;
+    final authState = ref.watch(authProvider);
     String nf(num v, {int d = 0}) => NumberSystemFormatter.formatFixed(v, fractionDigits: d);
+    final cs = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(title: Text(_tr(lang, 'Subscription', 'اشتراک', 'ګډون'))),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Text(_tr(lang, 'Current plan: Free trial', 'پلن فعلی: آزمایشی رایگان', 'اوسنی پلان: وړیا ازمایښتي')),
-          const SizedBox(height: 12),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(_tr(lang, 'Basic Plan — ${nf(400)} AFN / month', 'پلن پایه — ${nf(400)} ؋ / ماه', 'بنسټیز پلان — ${nf(400)} افغانۍ / میاشت')),
-                  const SizedBox(height: 8),
-                  Text(_tr(lang, '✅ Unlimited products', '✅ محصولات نامحدود', '✅ نامحدود محصولات')),
-                  Text(_tr(lang, '✅ WhatsApp reminders', '✅ یادآوری واتساپ', '✅ د واتساپ یادونې')),
-                  Text(_tr(lang, '✅ Unlimited PDF', '✅ PDF نامحدود', '✅ نامحدود PDF')),
-                  const SizedBox(height: 8),
-                  FilledButton(onPressed: () {}, child: Text(_tr(lang, 'Choose Basic Plan', 'انتخاب پلن پایه', 'بنسټیز پلان وټاکئ'))),
+      body: FutureBuilder<ShopProfile?>(
+        future: ShopProfileService.loadWithCloudFallback(),
+        builder: (context, snapshot) {
+          final profile = snapshot.data;
+          final isGuest = authState.isGuest;
+          
+          String planDescription = isGuest 
+              ? _tr(lang, 'Demo Mode', 'حالت آزمایشی', 'ازمایښتي حالت')
+              : (profile?.subscriptionStatus == 'trial'
+                ? _tr(lang, 'Trial Period', 'دوره آزمایشی', 'ازمایښتي دوره')
+                : (profile?.subscriptionStatus == 'expired'
+                  ? _tr(lang, 'Expired', 'منقضی شده', 'پای ته رسیدلی')
+                  : _tr(lang, 'Active Plan', 'پلن فعال', 'فعال پلان')));
+
+          String? dateInfo;
+          if (!isGuest && profile != null) {
+            final date = profile.subscriptionStatus == 'trial' ? profile.trialEndsAt : profile.subscriptionEndsAt;
+            if (date != null) {
+              final calendarSystem = ref.read(appCalendarSystemProvider);
+              final formattedDate = NumberSystemFormatter.apply(
+                DateFormatter.formatDate(date, 
+                  calendar: calendarSystem == CalendarSystem.persian ? CalendarType.persian : CalendarType.gregorian,
+                  locale: lang,
+                ),
+              );
+              dateInfo = profile.subscriptionStatus == 'expired'
+                  ? _tr(lang, 'Expired on $formattedDate', 'در تاریخ $formattedDate منقضی شد', 'په $formattedDate پای ته ورسېد')
+                  : _tr(lang, 'Expires on $formattedDate', 'تاریخ انقضا: $formattedDate', 'د ختمیدو نیټه: $formattedDate');
+            }
+          }
+
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: profile?.isSubscriptionActive == false ? AppColors.danger.withOpacity(0.1) : cs.primaryContainer.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: profile?.isSubscriptionActive == false ? AppColors.danger.withOpacity(0.3) : cs.primary.withOpacity(0.2)),
+                ),
+                child: Column(
+                  children: [
+                    Text(planDescription, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    if (dateInfo != null) ...[
+                      const SizedBox(height: 8),
+                      Text(dateInfo, style: TextStyle(color: profile?.isSubscriptionActive == false ? AppColors.danger : cs.onSurfaceVariant)),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(_tr(lang, 'Available Plans', 'پلن‌های موجود', 'شته پلانونه'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              _buildPlanCard(
+                context,
+                lang: lang,
+                title: _tr(lang, 'Basic Plan', 'پلن پایه', 'بنسټیز پلان'),
+                price: nf(400),
+                period: _tr(lang, 'month', 'ماه', 'میاشت'),
+                features: [
+                  _tr(lang, 'Unlimited products', 'محصولات نامحدود', 'نامحدود محصولات'),
+                  _tr(lang, 'WhatsApp reminders', 'یادآوری واتساپ', 'د واتساپ یادونې'),
+                  _tr(lang, 'Cloud sync', 'همگام‌سازی ابری', 'د کلاوډ همغږي'),
                 ],
               ),
+              const SizedBox(height: 12),
+              _buildPlanCard(
+                context,
+                lang: lang,
+                title: _tr(lang, 'Annual Plan', 'پلن سالانه', 'کلنی پلان'),
+                price: nf(3600),
+                period: _tr(lang, 'year', 'سال', 'کال'),
+                features: [
+                  _tr(lang, 'Everything in Basic', 'همه امکانات پلن پایه', 'د بنسټیز پلان ټولې اسانتیاوې'),
+                  _tr(lang, 'Save ${nf(1200)} AFN', 'صرفه جویی ${nf(1200)} ؋', 'د ${nf(1200)} افغانیو سپما'),
+                ],
+                isPopular: true,
+              ),
+              const SizedBox(height: 32),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(Icons.info_outline, color: Colors.amber),
+                    const SizedBox(height: 8),
+                    Text(
+                      _tr(lang, 
+                        'To renew or upgrade, please contact our support team or pay in cash at our office.',
+                        'برای تمدید یا ارتقا، لطفاً با تیم پشتیبانی ما تماس بگیرید یا هزینه را به صورت نقدی در دفتر ما پرداخت کنید.',
+                        'د تمدید یا ارتقا لپاره، مهرباني وکړئ زموږ د ملاتړ ټیم سره اړیکه ونیسئ یا زموږ په دفتر کې نغدي پیسې ورکړئ.'
+                      ),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildPlanCard(
+    BuildContext context, {
+    required String lang,
+    required String title,
+    required String price,
+    required String period,
+    required List<String> features,
+    bool isPopular = false,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    return Card(
+      elevation: isPopular ? 4 : 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: isPopular ? BorderSide(color: cs.primary, width: 2) : BorderSide.none,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (isPopular)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(color: cs.primary, borderRadius: BorderRadius.circular(8)),
+                child: Text(_tr(lang, 'BEST VALUE', 'بهترین ارزش', 'غوره ارزښت'), style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+              ),
+            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text('$price ؋', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                Text(' / $period', style: TextStyle(color: cs.onSurfaceVariant)),
+              ],
             ),
-          ),
-          const SizedBox(height: 12),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(height: 16),
+            ...features.map((f) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
                 children: [
-                  Text(_tr(lang, 'Annual Plan — ${nf(3600)} AFN / year', 'پلن سالانه — ${nf(3600)} ؋ / سال', 'کلنی پلان — ${nf(3600)} افغانۍ / کال')),
-                  const SizedBox(height: 8),
-                  FilledButton(onPressed: () {}, child: Text(_tr(lang, 'Choose Annual Plan', 'انتخاب پلن سالانه', 'کلنی پلان وټاکئ'))),
+                  Icon(Icons.check_circle, size: 18, color: cs.primary),
+                  const SizedBox(width: 8),
+                  Text(f),
                 ],
               ),
-            ),
-          ),
-        ],
+            )),
+          ],
+        ),
       ),
     );
   }

@@ -4,6 +4,8 @@ import 'package:drift_flutter/drift_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+// This import ensures we use SQLCipher instead of standard SQLite on Android
+import 'package:sqlite3_flutter_libs/sqlite3_flutter_libs.dart';
 
 // Import all table definitions
 import 'tables/shops_table.dart';
@@ -58,6 +60,8 @@ class AppDatabase extends _$AppDatabase {
   int get schemaVersion => 1;
 
   static QueryExecutor _openConnection() {
+    // Ensure SQLCipher is used instead of standard SQLite
+    setupSqlCipher();
     return driftDatabase(
       name: 'hesabat_db',
       native: const DriftNativeOptions(

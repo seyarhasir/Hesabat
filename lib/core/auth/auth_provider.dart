@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'auth_service.dart';
+import '../settings/shop_profile_service.dart';
 
 /// Auth state
 @immutable
@@ -72,20 +73,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
   
-  /// Verify OTP
-  Future<bool> verifyOtp(String phone, String otp) async {
+  /// Verify OTP. Returns the shop profile fetched after auth, or null.
+  Future<ShopProfile?> verifyOtp(String phone, String otp) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final success = await _authService.verifyOtp(phone, otp);
-      if (success) {
-        state = const AuthState(mode: AuthMode.authenticated);
-      } else {
-        state = state.copyWith(isLoading: false, error: 'Invalid OTP');
-      }
-      return success;
+      final profile = await _authService.verifyOtp(phone, otp);
+      state = const AuthState(mode: AuthMode.authenticated);
+      return profile;
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
-      return false;
+      return null;
     }
   }
   
@@ -131,17 +128,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
 /// Provider
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  SupabaseClient supabase;
-  try {
-    // Try to use the initialized singleton instance if available
-    supabase = Supabase.instance.client;
-  } catch (_) {
-    // Fallback: Create a direct client if initialization hasn't happened yet.
-    // This allows the app to proceed with local logic while Supabase starts in background.
-    supabase = SupabaseClient(
-      const String.fromEnvironment('SUPABASE_URL', defaultValue: 'https://your-project.supabase.co'),
-      const String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: 'your-anon-key'),
-    );
-  }
+  final supabase = Supabase.instance.client;
   return AuthNotifier(AuthService(supabase));
 });

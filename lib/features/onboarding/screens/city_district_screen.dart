@@ -13,6 +13,8 @@ class CityDistrictScreen extends ConsumerStatefulWidget {
 class _CityDistrictScreenState extends ConsumerState<CityDistrictScreen> {
   String _selectedCity = 'Kabul';
   String? _selectedDistrict;
+  Map<String, dynamic>? _onboardingData;
+  bool _argsLoaded = false;
 
   static const _cities = ['Kabul', 'Herat', 'Mazar-i-Sharif', 'Kandahar', 'Jalalabad'];
   static const _districtsByCity = {
@@ -22,6 +24,17 @@ class _CityDistrictScreenState extends ConsumerState<CityDistrictScreen> {
     'Kandahar': ['District 1', 'District 2'],
     'Jalalabad': ['District 1', 'District 2'],
   };
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_argsLoaded) return;
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is Map<String, dynamic>) {
+      _onboardingData = args;
+    }
+    _argsLoaded = true;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,11 +83,27 @@ class _CityDistrictScreenState extends ConsumerState<CityDistrictScreen> {
                   text: 'بعدی',
                   onPressed: _selectedDistrict == null
                       ? null
-                      : () => Navigator.pushNamed(context, '/onboarding/currency'),
+                      : () => Navigator.pushReplacementNamed(
+                            context,
+                            '/onboarding/currency',
+                            arguments: {
+                              ...?_onboardingData,
+                              'city': _selectedCity,
+                              'district': _selectedDistrict,
+                            },
+                          ),
                 ),
               ),
               TextButton(
-                onPressed: () => Navigator.pushNamed(context, '/onboarding/currency'),
+                onPressed: () => Navigator.pushReplacementNamed(
+                  context,
+                  '/onboarding/currency',
+                  arguments: {
+                    ...?_onboardingData,
+                    'city': _selectedCity,
+                    'district': _selectedDistrict,
+                  },
+                ),
                 child: const Text('رد کردن — Skip'),
               ),
               const SizedBox(height: 24),

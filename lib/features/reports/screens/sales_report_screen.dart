@@ -424,7 +424,7 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
             const SizedBox(height: 12),
             _breakdownRow(_tr('Cash', 'نقد', 'نغد'), _cashSales, cashPct, AppColors.success),
             _breakdownRow(_tr('Qarz', 'قرض', 'قرض'), _creditSales, creditPct, AppColors.danger),
-            _breakdownRow(_tr('Mixed', 'مختلط', 'ګډ'), _mixedSales, mixedPct, AppColors.chart2),
+            _breakdownRow(_tr('Split', 'ترکیبی', 'ګډ'), _mixedSales, mixedPct, AppColors.chart2),
           ],
         ),
       ),
@@ -494,7 +494,7 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
               children: [
                 _legendItem(_tr('Cash', 'نقد', 'نغد'), AppColors.success),
                 _legendItem(_tr('Qarz', 'قرض', 'قرض'), AppColors.danger),
-                _legendItem(_tr('Mixed', 'مختلط', 'ګډ'), AppColors.chart2),
+                _legendItem(_tr('Split', 'ترکیبی', 'ګډ'), AppColors.chart2),
               ],
             ),
           ],

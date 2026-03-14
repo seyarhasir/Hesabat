@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Hesabat – Redesign v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #0D1117;
+    --surface:   #161B22;
+    --surface2:  #1C2330;
+    --border:    #2A3444;
+    --blue:      #2F80ED;
+    --blue-dim:  #1B3A5E;
+    --green:     #27AE60;
+    --green-dim: #143D25;
+    --amber:     #F2994A;
+    --amber-dim: #3D2A10;
+    --red:       #EB5757;
+    --red-dim:   #3D1515;
+    --purple:    #9B59B6;
+    --purple-dim:#2D1B40;
+    --text:      #F0F4F8;
+    --muted:     #6B7D93;
+    --radius:    20px;
+    --radius-sm: 12px;
+    --nav-h:     72px;
+  }
+
+- { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+body {
+background: #080C12;
+color: var(–text);
+font-family: ‘Tajawal’, sans-serif;
+min-height: 100vh;
+}
+
+/* ── SHOWCASE WRAPPER ── */
+.showcase {
+display: flex;
+flex-wrap: wrap;
+gap: 28px;
+justify-content: center;
+align-items: flex-start;
+padding: 40px 20px 60px;
+}
+
+.showcase-header {
+width: 100%;
+text-align: center;
+padding: 16px 0 8px;
+}
+.showcase-header h1 { font-size: 26px; font-weight: 800; color: var(–text); }
+.showcase-header p  { font-size: 14px; color: var(–muted); margin-top: 6px; }
+
+/* ── PHONE SHELL ── */
+.phone-wrap {
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 14px;
+}
+
+.phone-label {
+font-size: 11px;
+font-weight: 700;
+letter-spacing: .12em;
+text-transform: uppercase;
+color: var(–muted);
+}
+
+.phone {
+width: 340px;
+height: 720px;
+background: var(–bg);
+border-radius: 40px;
+border: 2px solid var(–border);
+overflow: hidden;
+box-shadow: 0 24px 64px rgba(0,0,0,.8), inset 0 0 0 1px #ffffff06;
+display: flex;
+flex-direction: column;
+}
+
+/* ── STATUS BAR ── */
+.status-bar {
+display: flex;
+justify-content: space-between;
+padding: 12px 22px 0;
+font-size: 12px;
+font-weight: 700;
+color: var(–muted);
+flex-shrink: 0;
+}
+
+/* ── APP HEADER ── */
+.app-header {
+display: flex;
+align-items: center;
+justify-content: space-between;
+padding: 10px 18px 0;
+flex-shrink: 0;
+}
+.app-title { font-size: 20px; font-weight: 800; }
+.header-icons { display: flex; gap: 8px; }
+.icon-btn {
+width: 36px; height: 36px;
+border-radius: 10px;
+background: var(–surface);
+border: 1px solid var(–border);
+display: flex; align-items: center; justify-content: center;
+font-size: 16px; cursor: pointer;
+}
+
+/* ── SCROLLABLE SCREEN BODY ── */
+.screen {
+flex: 1;
+overflow-y: auto;
+padding: 14px 14px 8px;
+scrollbar-width: none;
+}
+.screen::-webkit-scrollbar { display: none; }
+
+/* ── BOTTOM NAV ── */
+.bottom-nav {
+height: var(–nav-h);
+background: var(–surface);
+border-top: 1px solid var(–border);
+display: flex;
+align-items: flex-end;
+padding-bottom: 10px;
+flex-shrink: 0;
+}
+.nav-item {
+flex: 1;
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 3px;
+padding-bottom: 2px;
+cursor: pointer;
+}
+.nav-icon  { font-size: 20px; color: var(–muted); }
+.nav-label { font-size: 10px; font-weight: 600; color: var(–muted); }
+.nav-item.active .nav-icon  { color: var(–blue); }
+.nav-item.active .nav-label { color: var(–blue); }
+.nav-fab-wrap {
+flex: 0 0 68px;
+display: flex;
+justify-content: center;
+align-items: flex-end;
+padding-bottom: 2px;
+}
+.nav-fab {
+width: 52px; height: 52px;
+background: var(–blue);
+border-radius: 16px;
+display: flex; align-items: center; justify-content: center;
+font-size: 26px; color: #fff;
+margin-bottom: 4px;
+box-shadow: 0 6px 20px rgba(47,128,237,.5);
+cursor: pointer;
+}
+
+/* ══════════════════════════════
+SHARED COMPONENTS
+══════════════════════════════ */
+
+.section-label {
+font-size: 10px;
+font-weight: 700;
+letter-spacing: .1em;
+text-transform: uppercase;
+color: var(–muted);
+margin: 10px 0 7px;
+}
+
+.search-bar {
+display: flex;
+align-items: center;
+background: var(–surface);
+border: 1.5px solid var(–border);
+border-radius: var(–radius-sm);
+padding: 0 12px;
+gap: 8px;
+margin-bottom: 12px;
+}
+.search-bar input {
+flex: 1; background: none; border: none; outline: none;
+padding: 12px 0;
+font-family: ‘Tajawal’, sans-serif;
+font-size: 14px; color: var(–text);
+}
+.search-bar input::placeholder { color: var(–muted); }
+.si { font-size: 16px; color: var(–muted); }
+
+/* ══════════════════════════════
+HOME SCREEN
+══════════════════════════════ */
+
+.today-card {
+background: linear-gradient(135deg, #2F80ED 0%, #1a55b0 100%);
+border-radius: var(–radius);
+padding: 18px;
+margin-bottom: 12px;
+position: relative;
+overflow: hidden;
+}
+.today-card::before {
+content:’’; position:absolute; top:-24px; right:-16px;
+width:110px; height:110px; border-radius:50%;
+background:rgba(255,255,255,.07);
+}
+.today-label { font-size: 11px; font-weight:600; opacity:.7; letter-spacing:.06em; text-transform:uppercase; margin-bottom:3px; }
+.today-amount { font-size: 38px; font-weight:800; line-height:1; }
+.today-afn { font-size:18px; opacity:.65; margin-left:3px; }
+.today-split { display:flex; gap:10px; margin-top:10px; }
+.split-pill {
+background:rgba(255,255,255,.15); border-radius:20px;
+padding: 4px 10px; font-size:12px; font-weight:600;
+}
+
+.stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-bottom:12px; }
+.stat-card {
+background:var(–surface); border:1px solid var(–border);
+border-radius:var(–radius-sm); padding:13px;
+}
+.stat-icon { font-size:20px; margin-bottom:5px; }
+.stat-val  { font-size:20px; font-weight:800; line-height:1; }
+.stat-desc { font-size:11px; color:var(–muted); margin-top:3px; }
+
+.action-grid { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-bottom:12px; }
+.action-btn {
+border-radius:var(–radius-sm); padding:16px 10px;
+display:flex; flex-direction:column; align-items:center; gap:7px;
+cursor:pointer; border:none; font-family:‘Tajawal’,sans-serif;
+font-size:13px; font-weight:700; color:var(–text);
+}
+.action-btn .ab-icon { font-size:26px; }
+.btn-blue   { background:var(–blue); color:#fff; }
+.btn-amber  { background:var(–amber-dim); border:1.5px solid rgba(242,153,74,.25); color:var(–amber); }
+.btn-neutral{ background:var(–surface); border:1.5px solid var(–border); }
+
+.activity-item {
+display:flex; align-items:center; gap:11px;
+padding:11px 13px;
+background:var(–surface); border:1px solid var(–border);
+border-radius:var(–radius-sm); margin-bottom:8px;
+}
+.act-dot {
+width:34px; height:34px; border-radius:9px;
+display:flex; align-items:center; justify-content:center;
+font-size:17px; flex-shrink:0;
+}
+.dot-green { background:var(–green-dim); }
+.dot-amber { background:var(–amber-dim); }
+.act-info { flex:1; }
+.act-name { font-size:13px; font-weight:600; }
+.act-time { font-size:11px; color:var(–muted); margin-top:2px; }
+.act-amt  { font-size:15px; font-weight:800; }
+.c-green  { color:var(–green); }
+.c-amber  { color:var(–amber); }
+.c-red    { color:var(–red); }
+.c-blue   { color:var(–blue); }
+
+/* ══════════════════════════════
+NEW SALE SCREEN
+══════════════════════════════ */
+
+.product-card {
+display:flex; align-items:center; gap:11px;
+background:var(–surface); border:1.5px solid var(–border);
+border-radius:var(–radius-sm); padding:13px; margin-bottom:8px; cursor:pointer;
+transition: border-color .15s;
+}
+.product-card.selected { border-color:var(–blue); background:var(–blue-dim); }
+.product-thumb {
+width:44px; height:44px; border-radius:11px;
+background:var(–surface2);
+display:flex; align-items:center; justify-content:center;
+font-size:22px; flex-shrink:0;
+}
+.product-info { flex:1; }
+.product-name { font-size:14px; font-weight:700; }
+.product-meta { display:flex; gap:8px; margin-top:3px; align-items:center; }
+.product-price { font-size:15px; font-weight:800; color:var(–blue); }
+.product-stock {
+font-size:11px; color:var(–muted);
+background:var(–surface2); padding:2px 7px; border-radius:20px;
+}
+.product-add {
+width:34px; height:34px; background:var(–blue);
+border-radius:9px; display:flex; align-items:center;
+justify-content:center; font-size:20px; color:#fff; flex-shrink:0; cursor:pointer;
+}
+
+.cart-bar {
+background:var(–blue); border-radius:var(–radius-sm);
+padding:14px 18px; display:flex; align-items:center;
+justify-content:space-between; margin-top:6px; cursor:pointer;
+}
+.cart-left  { font-size:12px; opacity:.8; }
+.cart-total { font-size:19px; font-weight:800; }
+.cart-cta   {
+background:rgba(255,255,255,.2); border-radius:9px;
+padding:7px 14px; font-size:13px; font-weight:700;
+}
+
+/* ══════════════════════════════
+QARZ SCREEN
+══════════════════════════════ */
+
+.debt-hero {
+background:linear-gradient(135deg,#1B3A5E,#0D1117);
+border:1px solid var(–blue-dim);
+border-radius:var(–radius); padding:18px;
+text-align:center; margin-bottom:12px;
+}
+.debt-hero-label { font-size:11px; color:var(–muted); letter-spacing:.07em; text-transform:uppercase; margin-bottom:4px; }
+.debt-hero-amt   { font-size:40px; font-weight:800; color:var(–amber); line-height:1; }
+.debt-hero-afn   { font-size:18px; color:var(–amber); opacity:.6; }
+.debt-pills      { display:flex; gap:8px; justify-content:center; margin-top:10px; }
+.debt-pill       { border-radius:20px; padding:4px 12px; font-size:12px; font-weight:600; }
+.pill-blue { background:var(–blue-dim); color:var(–blue); }
+.pill-red  { background:var(–red-dim);  color:var(–red); }
+
+.debt-item {
+background:var(–surface); border:1px solid var(–border);
+border-radius:var(–radius-sm); padding:13px; margin-bottom:8px;
+display:flex; align-items:center; gap:11px;
+}
+.debt-avatar {
+width:42px; height:42px; border-radius:13px;
+background:var(–amber-dim);
+display:flex; align-items:center; justify-content:center;
+font-size:19px; flex-shrink:0;
+}
+.debt-name { font-size:14px; font-weight:700; }
+.debt-amount-row { display:flex; align-items:center; gap:7px; margin-top:3px; }
+.debt-owed  { font-size:15px; font-weight:800; color:var(–amber); }
+.debt-badge { font-size:11px; font-weight:600; padding:2px 7px; border-radius:20px; }
+.badge-current { background:var(–green-dim); color:var(–green); }
+.badge-overdue { background:var(–red-dim);   color:var(–red); }
+.pay-btn {
+margin-left:auto; background:var(–green); color:#fff;
+border:none; border-radius:9px; padding:8px 14px;
+font-family:‘Tajawal’,sans-serif; font-size:12px; font-weight:700;
+cursor:pointer; flex-shrink:0;
+}
+
+/* ══════════════════════════════
+MORE SCREEN
+══════════════════════════════ */
+
+.more-hero {
+background:linear-gradient(135deg,var(–blue) 0%,#1a55b0 100%);
+border-radius:var(–radius); padding:18px; margin-bottom:14px;
+}
+.more-hero-title { font-size:18px; font-weight:800; margin-bottom:3px; }
+.more-hero-sub   { font-size:13px; opacity:.75; }
+
+.more-section-label {
+font-size:10px; font-weight:700; letter-spacing:.1em;
+text-transform:uppercase; color:var(–muted);
+margin:12px 0 6px 2px;
+}
+
+.more-item {
+display:flex; align-items:center; gap:13px;
+background:var(–surface); border:1px solid var(–border);
+border-radius:var(–radius-sm); padding:14px 16px;
+margin-bottom:7px; cursor:pointer;
+transition: border-color .15s;
+}
+.more-item:hover { border-color: var(–blue); }
+
+.more-item-icon {
+width:40px; height:40px; border-radius:11px;
+display:flex; align-items:center; justify-content:center;
+font-size:20px; flex-shrink:0;
+}
+.mi-blue   { background:var(–blue-dim); }
+.mi-amber  { background:var(–amber-dim); }
+.mi-green  { background:var(–green-dim); }
+.mi-purple { background:var(–purple-dim); }
+.mi-muted  { background:var(–surface2); }
+
+.more-item-info { flex:1; }
+.more-item-name { font-size:14px; font-weight:700; }
+.more-item-desc { font-size:12px; color:var(–muted); margin-top:2px; }
+.more-chevron   { font-size:16px; color:var(–muted); }
+
+/* ══════════════════════════════
+CUSTOMERS SCREEN
+══════════════════════════════ */
+
+.customer-item {
+display:flex; align-items:center; gap:11px;
+background:var(–surface); border:1px solid var(–border);
+border-radius:var(–radius-sm); padding:13px; margin-bottom:8px;
+cursor:pointer;
+}
+.customer-avatar {
+width:42px; height:42px; border-radius:13px;
+display:flex; align-items:center; justify-content:center;
+font-size:19px; flex-shrink:0;
+}
+.ca-blue   { background:var(–blue-dim); }
+.ca-amber  { background:var(–amber-dim); }
+.ca-green  { background:var(–green-dim); }
+
+.customer-name { font-size:14px; font-weight:700; }
+.customer-meta { font-size:12px; color:var(–muted); margin-top:2px; }
+.customer-debt { font-size:14px; font-weight:800; color:var(–amber); margin-left:auto; flex-shrink:0; }
+.customer-no-debt { font-size:12px; color:var(–green); margin-left:auto; flex-shrink:0; }
+
+.back-btn {
+display:flex; align-items:center; gap:6px;
+font-size:13px; font-weight:600; color:var(–blue);
+cursor:pointer; margin-bottom:6px;
+}
+
+/* ══════════════════════════════
+BOTTOM SUMMARY TABLE
+══════════════════════════════ */
+
+.summary-section {
+width:100%; max-width:900px;
+background:var(–surface); border:1px solid var(–border);
+border-radius:20px; padding:24px 28px; margin:0 auto;
+}
+.summary-section h2 { font-size:17px; font-weight:800; margin-bottom:18px; }
+
+.sum-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.sum-item {
+padding:14px; background:var(–surface2);
+border-radius:12px; border:1px solid var(–border);
+}
+.sum-tag  { font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; margin-bottom:5px; }
+.sum-item h3 { font-size:13px; font-weight:700; margin-bottom:4px; }
+.sum-item p  { font-size:12px; color:var(–muted); line-height:1.5; }
+.tag-blue   { color:var(–blue); }
+.tag-green  { color:var(–green); }
+.tag-amber  { color:var(–amber); }
+
+@media (max-width:720px) {
+.phone { width:300px; height:640px; }
+.sum-grid { grid-template-columns:1fr; }
+}
+</style>
+
+</head>
+<body>
+<div class="showcase">
+
+  <div class="showcase-header">
+    <h1>Hesabat – Redesign v2</h1>
+    <p>5 screens · Customers moved to More · FAB = instant New Sale</p>
+  </div>
+
+  <!-- ══════ SCREEN 1: HOME ══════ -->
+
+  <div class="phone-wrap">
+    <div class="phone-label">① Home</div>
+    <div class="phone">
+      <div class="status-bar"><span>2:03</span><span>📶 🔋</span></div>
+      <div class="app-header">
+        <div class="app-title">Hesabat</div>
+        <div class="header-icons">
+          <div class="icon-btn">🔔</div>
+          <div class="icon-btn">⚙️</div>
+        </div>
+      </div>
+      <div class="screen">
+        <div class="today-card">
+          <div class="today-label">امروز · Today</div>
+          <div><span class="today-amount">85,000</span><span class="today-afn">؋</span></div>
+          <div class="today-split">
+            <div class="split-pill">💵 Cash 65,000</div>
+            <div class="split-pill">🤝 Qarz 20,000</div>
+          </div>
+        </div>
+
+```
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-icon">👥</div>
+        <div class="stat-val c-amber">145,000 ؋</div>
+        <div class="stat-desc">Total Qarz owed</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📦</div>
+        <div class="stat-val c-red">7 items</div>
+        <div class="stat-desc">Low stock</div>
+      </div>
+    </div>
+
+    <div class="section-label">Quick Actions</div>
+    <div class="action-grid">
+      <button class="action-btn btn-blue">
+        <span class="ab-icon">🛒</span>New Sale
+      </button>
+      <button class="action-btn btn-amber">
+        <span class="ab-icon">🤝</span>New Qarz
+      </button>
+      <button class="action-btn btn-neutral">
+        <span class="ab-icon">📋</span>Daily Summary
+      </button>
+      <button class="action-btn btn-neutral">
+        <span class="ab-icon">📊</span>Reports
+      </button>
+    </div>
+
+    <div class="section-label">Recent Activity</div>
+    <div class="activity-item">
+      <div class="act-dot dot-green">💵</div>
+      <div class="act-info">
+        <div class="act-name">Cash sale</div>
+        <div class="act-time">10 minutes ago</div>
+      </div>
+      <div class="act-amt c-green">12,000 ؋</div>
+    </div>
+    <div class="activity-item">
+      <div class="act-dot dot-amber">🤝</div>
+      <div class="act-info">
+        <div class="act-name">Qarz – Ahmad Jan</div>
+        <div class="act-time">1 hour ago</div>
+      </div>
+      <div class="act-amt c-amber">8,000 ؋</div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item active"><span class="nav-icon">🏠</span><span class="nav-label">Home</span></div>
+    <div class="nav-item"><span class="nav-icon">💰</span><span class="nav-label">Sales</span></div>
+    <div class="nav-fab-wrap"><div class="nav-fab">+</div></div>
+    <div class="nav-item"><span class="nav-icon">👥</span><span class="nav-label">Qarz</span></div>
+    <div class="nav-item"><span class="nav-icon">☰</span><span class="nav-label">More</span></div>
+  </div>
+</div>
+```
+
+  </div>
+
+  <!-- ══════ SCREEN 2: NEW SALE ══════ -->
+
+  <div class="phone-wrap">
+    <div class="phone-label">② New Sale  <small style="color:var(--blue)">(FAB tap)</small></div>
+    <div class="phone">
+      <div class="status-bar"><span>2:03</span><span>📶 🔋</span></div>
+      <div class="app-header">
+        <div class="app-title">New Sale</div>
+        <div class="header-icons"><div class="icon-btn">📷</div></div>
+      </div>
+      <div class="screen">
+        <div class="search-bar">
+          <span class="si">🔍</span>
+          <input type="text" placeholder="Search or scan product…" />
+        </div>
+
+```
+    <div class="section-label">Recent Products</div>
+
+    <div class="product-card selected">
+      <div class="product-thumb">🧴</div>
+      <div class="product-info">
+        <div class="product-name">Sting Energy</div>
+        <div class="product-meta">
+          <span class="product-price">25 ؋</span>
+          <span class="product-stock">📦 6 left</span>
+        </div>
+      </div>
+      <div class="product-add">+</div>
+    </div>
+
+    <div class="product-card">
+      <div class="product-thumb">🥤</div>
+      <div class="product-info">
+        <div class="product-name">Cola 500ml</div>
+        <div class="product-meta">
+          <span class="product-price">30 ؋</span>
+          <span class="product-stock">📦 12 left</span>
+        </div>
+      </div>
+      <div class="product-add">+</div>
+    </div>
+
+    <div class="product-card">
+      <div class="product-thumb">🍫</div>
+      <div class="product-info">
+        <div class="product-name">Biscuit Pack</div>
+        <div class="product-meta">
+          <span class="product-price">15 ؋</span>
+          <span class="product-stock">📦 24 left</span>
+        </div>
+      </div>
+      <div class="product-add">+</div>
+    </div>
+
+    <div class="product-card">
+      <div class="product-thumb">🧃</div>
+      <div class="product-info">
+        <div class="product-name">Juice Box</div>
+        <div class="product-meta">
+          <span class="product-price">20 ؋</span>
+          <span class="product-stock">📦 8 left</span>
+        </div>
+      </div>
+      <div class="product-add">+</div>
+    </div>
+
+    <div class="cart-bar">
+      <div>
+        <div class="cart-left">1 item in cart</div>
+        <div class="cart-total">25 ؋</div>
+      </div>
+      <div class="cart-cta">Checkout →</div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item"><span class="nav-icon">🏠</span><span class="nav-label">Home</span></div>
+    <div class="nav-item active"><span class="nav-icon">💰</span><span class="nav-label">Sales</span></div>
+    <div class="nav-fab-wrap"><div class="nav-fab">+</div></div>
+    <div class="nav-item"><span class="nav-icon">👥</span><span class="nav-label">Qarz</span></div>
+    <div class="nav-item"><span class="nav-icon">☰</span><span class="nav-label">More</span></div>
+  </div>
+</div>
+```
+
+  </div>
+
+  <!-- ══════ SCREEN 3: QARZ ══════ -->
+
+  <div class="phone-wrap">
+    <div class="phone-label">③ Qarz</div>
+    <div class="phone">
+      <div class="status-bar"><span>2:03</span><span>📶 🔋</span></div>
+      <div class="app-header">
+        <div class="app-title">Qarz &nbsp;<span style="font-size:15px;color:var(--muted);font-weight:500">قرض</span></div>
+        <div class="header-icons"><div class="icon-btn">+</div></div>
+      </div>
+      <div class="screen">
+        <div class="debt-hero">
+          <div class="debt-hero-label">Total owed to you</div>
+          <div><span class="debt-hero-amt">145,000</span><span class="debt-hero-afn"> ؋</span></div>
+          <div class="debt-pills">
+            <div class="debt-pill pill-blue">👥 3 customers</div>
+            <div class="debt-pill pill-red">⚠️ 1 overdue</div>
+          </div>
+        </div>
+
+```
+    <div class="search-bar">
+      <span class="si">🔍</span>
+      <input type="text" placeholder="Search customer…" />
+    </div>
+
+    <div class="section-label">Active Debts</div>
+
+    <div class="debt-item">
+      <div class="debt-avatar">👤</div>
+      <div style="flex:1">
+        <div class="debt-name">Seyar</div>
+        <div class="debt-amount-row">
+          <span class="debt-owed">100 ؋</span>
+          <span class="debt-badge badge-current">● Current</span>
+        </div>
+      </div>
+      <button class="pay-btn">💵 Pay</button>
+    </div>
+
+    <div class="debt-item">
+      <div class="debt-avatar">👤</div>
+      <div style="flex:1">
+        <div class="debt-name">Ahmad Jan</div>
+        <div class="debt-amount-row">
+          <span class="debt-owed">8,000 ؋</span>
+          <span class="debt-badge badge-overdue">⚠️ Overdue</span>
+        </div>
+      </div>
+      <button class="pay-btn">💵 Pay</button>
+    </div>
+
+    <div class="debt-item">
+      <div class="debt-avatar">👤</div>
+      <div style="flex:1">
+        <div class="debt-name">Rahim</div>
+        <div class="debt-amount-row">
+          <span class="debt-owed">136,900 ؋</span>
+          <span class="debt-badge badge-current">● Current</span>
+        </div>
+      </div>
+      <button class="pay-btn">💵 Pay</button>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item"><span class="nav-icon">🏠</span><span class="nav-label">Home</span></div>
+    <div class="nav-item"><span class="nav-icon">💰</span><span class="nav-label">Sales</span></div>
+    <div class="nav-fab-wrap"><div class="nav-fab">+</div></div>
+    <div class="nav-item active"><span class="nav-icon">👥</span><span class="nav-label">Qarz</span></div>
+    <div class="nav-item"><span class="nav-icon">☰</span><span class="nav-label">More</span></div>
+  </div>
+</div>
+```
+
+  </div>
+
+  <!-- ══════ SCREEN 4: MORE ══════ -->
+
+  <div class="phone-wrap">
+    <div class="phone-label">④ More</div>
+    <div class="phone">
+      <div class="status-bar"><span>2:03</span><span>📶 🔋</span></div>
+      <div class="app-header">
+        <div class="app-title">More</div>
+      </div>
+      <div class="screen">
+
+```
+    <div class="more-hero">
+      <div class="more-hero-title">Tools &amp; Management</div>
+      <div class="more-hero-sub">Everything beyond daily sales</div>
+    </div>
+
+    <div class="more-section-label">People</div>
+
+    <div class="more-item">
+      <div class="more-item-icon mi-blue">👥</div>
+      <div class="more-item-info">
+        <div class="more-item-name">Customers</div>
+        <div class="more-item-desc">All customers, history &amp; profiles</div>
+      </div>
+      <span class="more-chevron">›</span>
+    </div>
+
+    <div class="more-section-label">Operations</div>
+
+    <div class="more-item">
+      <div class="more-item-icon mi-amber">📦</div>
+      <div class="more-item-info">
+        <div class="more-item-name">Inventory</div>
+        <div class="more-item-desc">Products, stock &amp; counting</div>
+      </div>
+      <span class="more-chevron">›</span>
+    </div>
+
+    <div class="more-item">
+      <div class="more-item-icon mi-green">📊</div>
+      <div class="more-item-info">
+        <div class="more-item-name">Reports</div>
+        <div class="more-item-desc">Sales, Qarz, inventory &amp; profit</div>
+      </div>
+      <span class="more-chevron">›</span>
+    </div>
+
+    <div class="more-section-label">App</div>
+
+    <div class="more-item">
+      <div class="more-item-icon mi-muted">⚙️</div>
+      <div class="more-item-info">
+        <div class="more-item-name">Settings</div>
+        <div class="more-item-desc">Language, digits, theme, calendar</div>
+      </div>
+      <span class="more-chevron">›</span>
+    </div>
+
+    <div class="more-item">
+      <div class="more-item-icon mi-purple">⭐</div>
+      <div class="more-item-info">
+        <div class="more-item-name">Subscription</div>
+        <div class="more-item-desc">Plan &amp; upgrade options</div>
+      </div>
+      <span class="more-chevron">›</span>
+    </div>
+
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item"><span class="nav-icon">🏠</span><span class="nav-label">Home</span></div>
+    <div class="nav-item"><span class="nav-icon">💰</span><span class="nav-label">Sales</span></div>
+    <div class="nav-fab-wrap"><div class="nav-fab">+</div></div>
+    <div class="nav-item"><span class="nav-icon">👥</span><span class="nav-label">Qarz</span></div>
+    <div class="nav-item active"><span class="nav-icon">☰</span><span class="nav-label">More</span></div>
+  </div>
+</div>
+```
+
+  </div>
+
+  <!-- ══════ SCREEN 5: CUSTOMERS (inside More) ══════ -->
+
+  <div class="phone-wrap">
+    <div class="phone-label">⑤ Customers  <small style="color:var(--muted)">(from More)</small></div>
+    <div class="phone">
+      <div class="status-bar"><span>2:03</span><span>📶 🔋</span></div>
+      <div class="app-header">
+        <div class="app-title">Customers</div>
+        <div class="header-icons"><div class="icon-btn">+</div></div>
+      </div>
+      <div class="screen">
+
+```
+    <div class="search-bar">
+      <span class="si">🔍</span>
+      <input type="text" placeholder="Search customer…" />
+    </div>
+
+    <!-- Summary pills -->
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+      <div class="debt-pill pill-blue">👥 5 customers</div>
+      <div class="debt-pill pill-red">⚠️ 3 with debt</div>
+      <div style="background:var(--green-dim);color:var(--green);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;">✓ 2 clear</div>
+    </div>
+
+    <div class="section-label">All Customers</div>
+
+    <div class="customer-item">
+      <div class="customer-avatar ca-amber">👤</div>
+      <div style="flex:1">
+        <div class="customer-name">Seyar</div>
+        <div class="customer-meta">Last purchase: today</div>
+      </div>
+      <div class="customer-debt">100 ؋ debt</div>
+    </div>
+
+    <div class="customer-item">
+      <div class="customer-avatar ca-amber">👤</div>
+      <div style="flex:1">
+        <div class="customer-name">Ahmad Jan</div>
+        <div class="customer-meta">Last purchase: 3 days ago</div>
+      </div>
+      <div class="customer-debt">8,000 ؋ debt</div>
+    </div>
+
+    <div class="customer-item">
+      <div class="customer-avatar ca-amber">👤</div>
+      <div style="flex:1">
+        <div class="customer-name">Rahim</div>
+        <div class="customer-meta">Last purchase: yesterday</div>
+      </div>
+      <div class="customer-debt">136,900 ؋ debt</div>
+    </div>
+
+    <div class="customer-item">
+      <div class="customer-avatar ca-blue">👤</div>
+      <div style="flex:1">
+        <div class="customer-name">Nasir</div>
+        <div class="customer-meta">Last purchase: 1 week ago</div>
+      </div>
+      <div class="customer-no-debt">✓ No debt</div>
+    </div>
+
+    <div class="customer-item">
+      <div class="customer-avatar ca-green">👤</div>
+      <div style="flex:1">
+        <div class="customer-name">Khalid</div>
+        <div class="customer-meta">Last purchase: 2 weeks ago</div>
+      </div>
+      <div class="customer-no-debt">✓ No debt</div>
+    </div>
+
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item"><span class="nav-icon">🏠</span><span class="nav-label">Home</span></div>
+    <div class="nav-item"><span class="nav-icon">💰</span><span class="nav-label">Sales</span></div>
+    <div class="nav-fab-wrap"><div class="nav-fab">+</div></div>
+    <div class="nav-item"><span class="nav-icon">👥</span><span class="nav-label">Qarz</span></div>
+    <div class="nav-item active"><span class="nav-icon">☰</span><span class="nav-label">More</span></div>
+  </div>
+</div>
+```
+
+  </div>
+
+  <!-- ══════ SUMMARY ══════ -->
+
+  <div class="summary-section">
+    <h2>🗂️ Navigation Structure</h2>
+    <div class="sum-grid">
+      <div class="sum-item">
+        <div class="sum-tag tag-blue">FAB  +  Button</div>
+        <h3>Opens New Sale instantly</h3>
+        <p>The most frequent action. One tap from anywhere in the app — no going back to Home first.</p>
+      </div>
+      <div class="sum-item">
+        <div class="sum-tag tag-amber">Qarz Tab</div>
+        <h3>Debtors only, not all customers</h3>
+        <p>Only shows people who owe money. Clean, focused list with Pay button visible immediately.</p>
+      </div>
+      <div class="sum-item">
+        <div class="sum-tag tag-green">More → Customers</div>
+        <h3>Full customer list lives here</h3>
+        <p>All customers including those with no debt. Separated into "People" section at top of More screen so it's easy to find but not cluttering daily flow.</p>
+      </div>
+      <div class="sum-item">
+        <div class="sum-tag tag-blue">More → Sections</div>
+        <h3>Grouped by purpose</h3>
+        <p><strong>People</strong> → Customers<br><strong>Operations</strong> → Inventory, Reports<br><strong>App</strong> → Settings, Subscription</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

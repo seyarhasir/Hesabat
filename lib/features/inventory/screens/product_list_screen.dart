@@ -49,14 +49,13 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
           _tr('Inventory', 'موجودی', 'زېرمه'),
           style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.add_circle_outline_rounded, color: cs.primary),
-            onPressed: () => _addProduct(guestMode),
-          ),
-          const SizedBox(width: AppSpacing.s),
-        ],
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _addProduct(guestMode),
+        tooltip: _tr('Add Product', 'افزودن محصول', 'محصول زیات کړئ'),
+        child: const Icon(Icons.add_rounded),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: Column(
         children: [
           // Search bar
