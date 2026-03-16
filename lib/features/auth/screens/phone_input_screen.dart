@@ -77,127 +77,237 @@ class _PhoneInputScreenState extends ConsumerState<PhoneInputScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => Navigator.pop(context),
+      backgroundColor: cs.surface,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              cs.primary.withOpacity(0.08),
+              cs.surface,
+              cs.secondary.withOpacity(0.04),
+            ],
+          ),
         ),
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: SafeArea(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 16),
-              Text('Enter Your Phone', style: theme.textTheme.displaySmall),
-              const SizedBox(height: 8),
-              Text(
-                'Continue with your account passcode',
-                style: theme.textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 32),
-
-              // Phone input
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: _error != null ? cs.error : cs.outline,
-                    width: _error != null ? 2 : 1,
-                  ),
-                ),
+              // Custom top bar
+              Padding(
+                padding: const EdgeInsets.all(16.0),
                 child: Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                      decoration: BoxDecoration(
-                        color: cs.surfaceContainerHighest.withOpacity(0.3),
-                        borderRadius: const BorderRadius.horizontal(left: Radius.circular(19)),
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_rounded),
+                      onPressed: () => Navigator.pop(context),
+                      style: IconButton.styleFrom(
+                        backgroundColor: cs.surface,
+                        foregroundColor: cs.onSurface,
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+                    ),
+                  ],
+                ),
+              ),
+              
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 28),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 20),
+                      // Icon/Logo placeholder
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: cs.primary.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.phone_iphone_rounded, size: 32, color: cs.primary),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Welcome Back',
+                        style: theme.textTheme.displaySmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: cs.onSurface,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Enter your registered phone number to access your business dashboard.',
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: cs.onSurface.withOpacity(0.6),
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 48),
+
+                      // Refined Phone Input
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('\u{1F1E6}\u{1F1EB}', style: TextStyle(fontSize: 20)),
-                          const SizedBox(width: 8),
-                          Text('+93', style: theme.textTheme.bodyLarge),
+                          Padding(
+                            padding: const EdgeInsets.only(left: 4, bottom: 8),
+                            child: Text(
+                              'Phone Number',
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: cs.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: cs.surface,
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: _error != null ? cs.error : cs.outline.withOpacity(0.2),
+                                width: _error != null ? 2 : 1.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: cs.primary.withOpacity(0.03),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.fromLTRB(20, 18, 12, 18),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Text('\u{1F1E6}\u{1F1EB}', style: TextStyle(fontSize: 22)),
+                                      const SizedBox(width: 10),
+                                      Text(
+                                        '+93',
+                                        style: theme.textTheme.titleMedium?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: cs.onSurface,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Container(
+                                        width: 1.5,
+                                        height: 24,
+                                        color: cs.outline.withOpacity(0.2),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Expanded(
+                                  child: TextField(
+                                    controller: _phoneController,
+                                    keyboardType: TextInputType.phone,
+                                    autofocus: true,
+                                    maxLength: 12,
+                                    style: theme.textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 1.5,
+                                    ),
+                                    decoration: InputDecoration(
+                                      hintText: '7X XXX XXXX',
+                                      hintStyle: TextStyle(color: cs.onSurface.withOpacity(0.35)),
+                                      border: InputBorder.none,
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                                      counterText: '',
+                                    ),
+                                    onChanged: (v) {
+                                      final normalized = _normalizeDigits(v);
+                                      if (normalized != v) {
+                                        _phoneController.value = TextEditingValue(
+                                          text: normalized,
+                                          selection: TextSelection.collapsed(offset: normalized.length),
+                                        );
+                                      }
+                                      if (_error != null) setState(() => _error = null);
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
-                    ),
-                    Expanded(
-                      child: TextField(
-                        controller: _phoneController,
-                        keyboardType: TextInputType.phone,
-                        maxLength: 12,
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 1,
+
+                      if (_error != null) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: cs.errorContainer.withOpacity(0.4),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.error_outline_rounded, size: 16, color: cs.error),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _error!,
+                                  style: theme.textTheme.bodySmall?.copyWith(color: cs.onErrorContainer),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        decoration: const InputDecoration(
-                          hintText: '07X XXX XXXX',
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 16),
-                          counterText: '',
-                          filled: false,
+                      ],
+
+                      const SizedBox(height: 24),
+
+                      // Helping info
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: cs.surface,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: cs.outline.withOpacity(0.1)),
                         ),
-                        onChanged: (v) {
-                          final normalized = _normalizeDigits(v);
-                          if (normalized != v) {
-                            _phoneController.value = TextEditingValue(
-                              text: normalized,
-                              selection: TextSelection.collapsed(offset: normalized.length),
-                            );
-                          }
-                          setState(() => _error = null);
-                        },
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: cs.secondary.withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Icon(Icons.vpn_key_outlined, color: cs.secondary, size: 20),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Text(
+                                'You will need your account passcode in the next step.',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: cs.onSurface.withOpacity(0.7),
+                                  height: 1.4,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
 
-              if (_error != null) ...[
-                const SizedBox(height: 8),
-                Text(_error!, style: TextStyle(color: cs.error, fontSize: 14)),
-              ],
-
-              const SizedBox(height: 16),
-
-              // Info
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: cs.secondary.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: cs.outline),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.info_outline_rounded, color: cs.primary, size: 20),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Use your registered number and passcode from sales/admin.',
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ),
-                  ],
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 60,
+                  child: AppButton(
+                    text: 'Continue',
+                    onPressed: _isLoading ? null : _onContinue,
+                    isLoading: _isLoading,
+                  ),
                 ),
               ),
-
-              const Spacer(),
-
-              SizedBox(
-                width: double.infinity,
-                child: AppButton(
-                  text: 'Continue',
-                  onPressed: _isLoading ? null : _onContinue,
-                  isLoading: _isLoading,
-                ),
-              ),
-              const SizedBox(height: 24),
             ],
           ),
         ),

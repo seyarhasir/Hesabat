@@ -99,13 +99,19 @@ class BarcodeLookupService {
     final type = (shop?.shopType ?? 'general').toLowerCase();
     final isBeautyFirst = type == 'pharmacy' || type == 'cosmetics';
 
+    // Parallelize: try both food and beauty at the same time to save time
+    final foodFuture = _fetchFromApi(normalizedBarcode, beauty: false);
+    final beautyFuture = _fetchFromApi(normalizedBarcode, beauty: true);
+
+    final results = await Future.wait([foodFuture, beautyFuture]);
+    final foodCandidate = results[0];
+    final beautyCandidate = results[1];
+
     BarcodeLookupCandidate? candidate;
     if (isBeautyFirst) {
-      candidate = await _fetchFromApi(normalizedBarcode, beauty: true);
-      candidate ??= await _fetchFromApi(normalizedBarcode, beauty: false);
+      candidate = beautyCandidate ?? foodCandidate;
     } else {
-      candidate = await _fetchFromApi(normalizedBarcode, beauty: false);
-      candidate ??= await _fetchFromApi(normalizedBarcode, beauty: true);
+      candidate = foodCandidate ?? beautyCandidate;
     }
 
     if (candidate == null) return BarcodeLookupOutcome.manual();
@@ -128,16 +134,17 @@ class BarcodeLookupService {
     final type = (shop?.shopType ?? 'general').toLowerCase();
     final isBeautyFirst = type == 'pharmacy' || type == 'cosmetics';
 
-    BarcodeLookupCandidate? candidate;
-    if (isBeautyFirst) {
-      candidate = await _fetchFromApi(normalizedBarcode, beauty: true);
-      candidate ??= await _fetchFromApi(normalizedBarcode, beauty: false);
-    } else {
-      candidate = await _fetchFromApi(normalizedBarcode, beauty: false);
-      candidate ??= await _fetchFromApi(normalizedBarcode, beauty: true);
-    }
+    // Parallelize lookup
+    final foodFuture = _fetchFromApi(normalizedBarcode, beauty: false);
+    final beautyFuture = _fetchFromApi(normalizedBarcode, beauty: true);
 
-    return candidate;
+    final results = await Future.wait([foodFuture, beautyFuture]);
+    final foodCandidate = results[0];
+    final beautyCandidate = results[1];
+
+    return isBeautyFirst
+        ? (beautyCandidate ?? foodCandidate)
+        : (foodCandidate ?? beautyCandidate);
   }
 
   /// Debug helper for runtime diagnostics on device.
@@ -299,7 +306,7 @@ class BarcodeLookupService {
 
     try {
       final result = await off.OpenFoodAPIClient.getProductV3(config, uriHelper: uriHelper)
-          .timeout(const Duration(seconds: 10), onTimeout: off.ProductResultV3.new);
+          .timeout(const Duration(seconds: 4), onTimeout: off.ProductResultV3.new);
       final p = result.product;
       if (p == null) {
         return await _fetchFromApiHttpFallback(barcode, beauty: beauty);
@@ -337,32 +344,35 @@ class BarcodeLookupService {
         ? const ['world.openbeautyfacts.org', 'openbeautyfacts.org']
         : const ['world.openfoodfacts.org', 'openfoodfacts.org'];
 
-    for (final host in hosts) {
+    final futures = hosts.map((host) async {
       final v2 = Uri.https(host, '/api/v2/product/$barcode.json', {
         'fields': 'code,product_name,product_name_en,product_name_ar,quantity,brands,categories_tags,status',
       });
-      final v0 = Uri.https(host, '/api/v0/product/$barcode.json');
-
-      final jsonV2 = await _fetchJsonMap(v2);
+      final jsonV2 = await _fetchJsonMap(v2, timeout: const Duration(seconds: 3));
       final parsedV2 = _parseOffJson(barcode, jsonV2);
       if (parsedV2 != null) return parsedV2;
 
-      final jsonV0 = await _fetchJsonMap(v0);
-      final parsedV0 = _parseOffJson(barcode, jsonV0);
-      if (parsedV0 != null) return parsedV0;
+      final v0 = Uri.https(host, '/api/v0/product/$barcode.json');
+      final jsonV0 = await _fetchJsonMap(v0, timeout: const Duration(seconds: 3));
+      return _parseOffJson(barcode, jsonV0);
+    });
+
+    final results = await Future.wait(futures);
+    for (final r in results) {
+      if (r != null) return r;
     }
 
     return null;
   }
 
-  Future<Map<String, dynamic>?> _fetchJsonMap(Uri uri) async {
+  Future<Map<String, dynamic>?> _fetchJsonMap(Uri uri, {Duration timeout = const Duration(seconds: 5)}) async {
     try {
       final client = HttpClient();
-      final request = await client.getUrl(uri).timeout(const Duration(seconds: 10));
+      final request = await client.getUrl(uri).timeout(timeout);
       request.headers.set('user-agent', 'Hesabat/1.0 (mobile app)');
       request.headers.set('accept', 'application/json');
 
-      final response = await request.close().timeout(const Duration(seconds: 10));
+      final response = await request.close().timeout(timeout);
       if (response.statusCode != 200) {
         client.close(force: true);
         return null;

@@ -161,6 +161,21 @@ class AuthStateNotifier extends Notifier<AuthViewState> {
       state = const AuthViewState.unauthenticated();
     }
   }
+
+  String formatPhoneForDisplay(String phone) {
+    if (phone.isEmpty) return '';
+    var out = phone;
+    if (out.startsWith('+93')) {
+      out = out.substring(3);
+    }
+    // Simple formatting for Afghan numbers
+    if (out.length >= 2) {
+      final prefix = out.substring(0, 2);
+      final rest = out.substring(2);
+      return '+93 $prefix $rest';
+    }
+    return '+93 $out';
+  }
 }
 
 final authStateNotifierProvider =

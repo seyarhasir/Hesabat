@@ -77,100 +77,204 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => Navigator.pop(context),
+      backgroundColor: cs.surface,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              cs.primary.withOpacity(0.08),
+              cs.surface,
+              cs.secondary.withOpacity(0.04),
+            ],
+          ),
         ),
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+        child: SafeArea(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: AppSpacing.l),
-              Text('Enter Passcode', style: theme.textTheme.displaySmall?.copyWith(fontWeight: FontWeight.bold)),
-              const SizedBox(height: AppSpacing.s),
-              Text(
-                'For ${widget.phone}',
-                style: theme.textTheme.bodyMedium?.copyWith(color: cs.onSurface.withOpacity(0.6)),
-              ),
-              const SizedBox(height: AppSpacing.sectionGap),
-
-              TextField(
-                controller: _passcodeController,
-                autofocus: true,
-                enabled: !_isLoading,
-                maxLength: 10,
-                keyboardType: TextInputType.visiblePassword,
-                textInputAction: TextInputAction.done,
-                obscureText: _obscurePasscode,
-                autocorrect: false,
-                enableSuggestions: false,
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
-                  LengthLimitingTextInputFormatter(10),
-                ],
-                onSubmitted: (_) => _verifyOtp(),
-                style: theme.textTheme.titleLarge?.copyWith(
-                  letterSpacing: 2,
-                  fontWeight: FontWeight.w600,
-                ),
-                decoration: InputDecoration(
-                  counterText: '',
-                  hintText: 'Enter 10-character passcode',
-                  filled: true,
-                  fillColor: cs.surface,
-                  border: OutlineInputBorder(
-                    borderRadius: AppRadius.large,
-                    borderSide: BorderSide(color: cs.outline.withOpacity(0.3)),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: AppRadius.large,
-                    borderSide: BorderSide(color: cs.outline.withOpacity(0.3)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: AppRadius.large,
-                    borderSide: BorderSide(color: cs.primary, width: 2),
-                  ),
-                  suffixIcon: IconButton(
-                    onPressed: _isLoading
-                        ? null
-                        : () => setState(() => _obscurePasscode = !_obscurePasscode),
-                    icon: Icon(
-                      _obscurePasscode ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+              // Custom top bar
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_rounded),
+                      onPressed: () => Navigator.pop(context),
+                      style: IconButton.styleFrom(
+                        backgroundColor: cs.surface,
+                        foregroundColor: cs.onSurface,
+                      ),
                     ),
+                  ],
+                ),
+              ),
+
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 28),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 20),
+                      // Icon/Logo placeholder
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: cs.primary.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.lock_person_rounded, size: 32, color: cs.primary),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Enter Passcode',
+                        style: theme.textTheme.displaySmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: cs.onSurface,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Text(
+                            'For ',
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: cs.onSurface.withOpacity(0.6),
+                            ),
+                          ),
+                          Text(
+                            widget.phone,
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: cs.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 48),
+
+                      // Passcode Input
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(left: 4, bottom: 8),
+                            child: Text(
+                              '10-Character Passcode',
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: cs.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: cs.surface,
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: cs.outline.withOpacity(0.2),
+                                width: 1.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: cs.primary.withOpacity(0.03),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ],
+                            ),
+                            child: TextField(
+                              controller: _passcodeController,
+                              autofocus: true,
+                              enabled: !_isLoading,
+                              maxLength: 10,
+                              keyboardType: TextInputType.visiblePassword,
+                              textInputAction: TextInputAction.done,
+                              obscureText: _obscurePasscode,
+                              autocorrect: false,
+                              enableSuggestions: false,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
+                                LengthLimitingTextInputFormatter(10),
+                              ],
+                              onSubmitted: (_) => _verifyOtp(),
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                letterSpacing: 4,
+                                fontWeight: FontWeight.bold,
+                                color: cs.onSurface,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: '••••••••••',
+                                hintStyle: TextStyle(
+                                  color: cs.onSurface.withOpacity(0.2),
+                                  letterSpacing: 4,
+                                ),
+                                border: InputBorder.none,
+                                contentPadding: const EdgeInsets.fromLTRB(20, 18, 12, 18),
+                                counterText: '',
+                                suffixIcon: Padding(
+                                  padding: const EdgeInsets.only(right: 8.0),
+                                  child: IconButton(
+                                    onPressed: _isLoading
+                                        ? null
+                                        : () => setState(() => _obscurePasscode = !_obscurePasscode),
+                                    icon: Icon(
+                                      _obscurePasscode ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                                      color: cs.primary.withOpacity(0.6),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      // Helping info
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: cs.primary.withOpacity(0.02),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: cs.primary.withOpacity(0.05)),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.help_outline_rounded, color: cs.primary.withOpacity(0.5), size: 20),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Text(
+                                "Your passcode is a unique 10-character code provided by your administrator.",
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: cs.onSurface.withOpacity(0.6),
+                                  height: 1.4,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
 
-              const SizedBox(height: AppSpacing.sectionGap),
-
-              Center(
-                child: Text(
-                  'Use your 10-character passcode',
-                  style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurface.withOpacity(0.6)),
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 60,
+                  child: AppButton(
+                    text: 'Verify & Sign In',
+                    onPressed: _isLoading ? null : _verifyOtp,
+                    isLoading: _isLoading,
+                  ),
                 ),
               ),
-
-              const Spacer(),
-
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _verifyOtp,
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Continue'),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xl),
             ],
           ),
         ),
