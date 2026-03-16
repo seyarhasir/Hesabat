@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ShopProfile {
@@ -84,27 +85,45 @@ class ShopProfileService {
   static const _storage = FlutterSecureStorage();
   static const _shopProfileKey = 'shop_profile_v1';
   static const _onboardingCompletedKey = 'onboarding_completed';
+  static const _activeShopIdKey = 'active_shop_id';
 
   /// ISSUE-10: Check if onboarding was completed
   static Future<bool> isOnboardingCompleted() async {
-    final value = await _storage.read(key: _onboardingCompletedKey);
+    final prefs = await SharedPreferences.getInstance();
+    var value = prefs.getString(_onboardingCompletedKey);
+
+    if (value == null) {
+      try {
+        value = await _storage.read(key: _onboardingCompletedKey);
+        if (value != null) {
+          await prefs.setString(_onboardingCompletedKey, value);
+        }
+      } catch (_) {}
+    }
+
     return value == 'true';
   }
 
   /// ISSUE-10: Mark onboarding as completed
   static Future<void> setOnboardingCompleted() async {
-    await _storage.write(key: _onboardingCompletedKey, value: 'true');
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_onboardingCompletedKey, 'true');
   }
 
   /// Clear onboarding flag (on sign-out)
   static Future<void> clearOnboardingFlag() async {
-    await _storage.delete(key: _onboardingCompletedKey);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_onboardingCompletedKey);
+    try {
+      await _storage.delete(key: _onboardingCompletedKey);
+    } catch (_) {}
   }
 
   static Future<void> save(ShopProfile profile) async {
-    await _storage.write(
-      key: _shopProfileKey,
-      value: jsonEncode(profile.toJson()),
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _shopProfileKey,
+      jsonEncode(profile.toJson()),
     );
   }
 
@@ -209,11 +228,35 @@ class ShopProfileService {
     if (user == null) return null;
 
     try {
-      final data = await supabase
+      // 1. Try direct fetch by owner_id
+      var data = await supabase
           .from('shops')
           .select()
           .eq('owner_id', user.id)
           .maybeSingle();
+
+      // 2. If not found, user might be on a new device/auth record. Try to RELINK.
+      if (data == null) {
+        final email = user.email ?? '';
+        if (email.startsWith('acct_') && email.contains('@hesabat.app')) {
+          final phoneDigits = email.split('@').first.replaceFirst('acct_', '');
+          if (phoneDigits.isNotEmpty) {
+            print('HESABAT: Attempting shop re-link for phone digits: $phoneDigits');
+            final relinkRes = await supabase.rpc('relink_shop_by_phone', params: {
+              'p_phone': phoneDigits,
+            });
+
+            if (relinkRes is Map && (relinkRes['status'] == 'linked' || relinkRes['status'] == 'already_linked')) {
+              // Relink worked, retry simple fetch
+              data = await supabase
+                  .from('shops')
+                  .select()
+                  .eq('owner_id', user.id)
+                  .maybeSingle();
+            }
+          }
+        }
+      }
 
       if (data == null) return null;
 
@@ -237,8 +280,59 @@ class ShopProfileService {
     }
   }
 
+  static Future<ShopProfile?> fetchByShopId(SupabaseClient supabase, String shopId) async {
+    if (shopId.trim().isEmpty) return null;
+
+    try {
+      final data = await supabase
+          .from('shops')
+          .select()
+          .eq('id', shopId)
+          .maybeSingle();
+
+      if (data == null) return null;
+
+      final profile = ShopProfile(
+        shopId: data['id'].toString(),
+        shopName: (data['name'] ?? 'My Shop').toString(),
+        shopType: (data['shop_type'] ?? 'general').toString().capitalize(),
+        city: (data['city'] ?? 'Kabul').toString(),
+        district: data['district']?.toString(),
+        currency: (data['currency_pref'] ?? 'AFN').toString(),
+        subscriptionStatus: (data['subscription_status'] ?? 'trial').toString(),
+        trialEndsAt: data['trial_ends_at'] != null ? DateTime.parse(data['trial_ends_at'].toString()) : null,
+        subscriptionEndsAt: data['subscription_ends_at'] != null ? DateTime.parse(data['subscription_ends_at'].toString()) : null,
+      );
+
+      await save(profile);
+      return profile;
+    } catch (e) {
+      print('HESABAT: Error fetching shop by id from cloud: $e');
+      return null;
+    }
+  }
+
   static Future<ShopProfile?> load() async {
-    final raw = await _storage.read(key: _shopProfileKey);
+    final prefs = await SharedPreferences.getInstance();
+    var raw = prefs.getString(_shopProfileKey);
+
+    // Migration logic: if not in SharedPreferences, try reading from SecureStorage
+    if (raw == null || raw.isEmpty) {
+      try {
+        raw = await _storage.read(key: _shopProfileKey);
+        if (raw != null && raw.isNotEmpty) {
+          // Found in secure storage, move to SharedPreferences
+          await prefs.setString(_shopProfileKey, raw);
+          // Try to clean up secure storage (ignore errors on Mac where it might fail)
+          try {
+            await _storage.delete(key: _shopProfileKey);
+          } catch (_) {}
+        }
+      } catch (_) {
+        // Secure storage might fail on Mac with -34018, just ignore and treat as empty
+      }
+    }
+
     if (raw == null || raw.isEmpty) return null;
 
     try {
@@ -254,23 +348,35 @@ class ShopProfileService {
 
   /// ISSUE-12 fix: Load from local storage first, fall back to cloud if null.
   static Future<ShopProfile?> loadWithCloudFallback() async {
-    final local = await load();
-    if (local != null) return local;
-
-    // Try cloud if authenticated
+    // If authenticated, prefer cloud to avoid stale local demo/profile values.
     try {
       final supabase = Supabase.instance.client;
       if (supabase.auth.currentUser != null) {
-        return await fetchFromCloud(supabase);
+        final cloud = await fetchFromCloud(supabase);
+        if (cloud != null) return cloud;
+
+        // Fallback path: use active shop id from local kv storage.
+        final prefs = await SharedPreferences.getInstance();
+        final activeShopId = prefs.getString(_activeShopIdKey);
+        if (activeShopId != null && activeShopId.isNotEmpty) {
+          final byId = await fetchByShopId(supabase, activeShopId);
+          if (byId != null) return byId;
+        }
       }
     } catch (e) {
       print('HESABAT: Cloud fallback failed: $e');
     }
-    return null;
+
+    // Fallback to local cache when cloud is unavailable.
+    return await load();
   }
 
   static Future<void> clear() async {
-    await _storage.delete(key: _shopProfileKey);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_shopProfileKey);
+    try {
+      await _storage.delete(key: _shopProfileKey);
+    } catch (_) {}
   }
 }
 

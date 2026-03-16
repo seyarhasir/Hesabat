@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:uuid/uuid.dart';
 import '../../../core/auth/guest_mode_service.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/database/database_provider.dart';
@@ -415,7 +416,7 @@ class _QarzDashboardScreenState extends ConsumerState<QarzDashboardScreen> {
 
     final newRemaining = (debt.amountRemaining - amount).clamp(0.0, debt.amountOriginal);
     final newStatus = newRemaining <= 0 ? 'paid' : 'partial';
-    final paymentId = 'local_pay_${DateTime.now().millisecondsSinceEpoch}';
+    final paymentId = const Uuid().v4();
     final syncEnabled = !(await GuestModeService.isGuestMode());
     final nowIso = DateTime.now().toIso8601String();
 

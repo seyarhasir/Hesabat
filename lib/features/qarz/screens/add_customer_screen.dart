@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' show Value;
+import 'package:uuid/uuid.dart';
 
 import '../../../core/auth/guest_mode_service.dart';
 import '../../../core/database/app_database.dart';
@@ -107,7 +108,7 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
 
     final db = ref.read(databaseProvider);
     final shopId = ref.read(currentShopIdProvider);
-    final customerId = 'local_cust_${DateTime.now().millisecondsSinceEpoch}';
+    final customerId = const Uuid().v4();
     final syncEnabled = !(await GuestModeService.isGuestMode());
     final nowIso = DateTime.now().toIso8601String();
     final phone = _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim();

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' show Value;
+import 'package:uuid/uuid.dart';
 
 import '../../../core/auth/guest_mode_service.dart';
 import '../../../core/database/app_database.dart';
@@ -142,7 +143,7 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
     final shopId = ref.read(currentShopIdProvider);
     final newRemaining = (amountRemaining - validAmount).clamp(0.0, amountRemaining);
     final newStatus = newRemaining <= 0 ? 'paid' : 'partial';
-    final paymentId = 'local_pay_${DateTime.now().millisecondsSinceEpoch}';
+    final paymentId = const Uuid().v4();
     final syncEnabled = !(await GuestModeService.isGuestMode());
     final nowIso = DateTime.now().toIso8601String();
 

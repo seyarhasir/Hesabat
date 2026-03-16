@@ -154,29 +154,20 @@ class AuthService {
     final user = _supabase.auth.currentUser;
     if (user == null) return null;
 
-    // Try each phone candidate to find the admin_created_accounts record
+    // Use the RPC which has SECURITY DEFINER to bypass RLS for admin table lookup
+    // and correctly canonicalizes the phone number.
     for (final phone in phoneCandidates) {
-      final record = await _supabase
-          .from('admin_created_accounts')
-          .select('shop_id')
-          .eq('phone', phone)
-          .maybeSingle();
+      try {
+        final relinkRes = await _supabase.rpc('relink_shop_by_phone', params: {
+          'p_phone': phone,
+        });
 
-      if (record != null && record['shop_id'] != null) {
-        final shopId = record['shop_id'].toString();
-
-        // Update shops.owner_id to match this auth user's UUID
-        try {
-          await _supabase
-              .from('shops')
-              .update({'owner_id': user.id})
-              .eq('id', shopId);
-        } catch (e) {
-          print('HESABAT: Failed to update shop owner_id: $e');
+        if (relinkRes is Map && (relinkRes['status'] == 'linked' || relinkRes['status'] == 'already_linked')) {
+          // Relink worked or was already done, fetch the profile
+          return await ShopProfileService.fetchFromCloud(_supabase);
         }
-
-        // Now fetchFromCloud will work because owner_id matches
-        return await ShopProfileService.fetchFromCloud(_supabase);
+      } catch (e) {
+        print('HESABAT: Relink RPC failed for $phone: $e');
       }
     }
 

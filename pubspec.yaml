@@ -13,36 +13,31 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
-  # State management
-  flutter_riverpod: ^2.5.1
-  riverpod_annotation: ^2.3.5
-
-  # Local database (offline-first)
+  # Phase A foundation
+  flutter_riverpod: ^2.6.1
+  go_router: ^13.2.5
+  supabase_flutter: ^2.5.0
   drift: ^2.18.0
   drift_flutter: ^0.2.1
-  sqlcipher_flutter_libs: ^0.5.4
-
-  # Backend / sync
-  supabase_flutter: ^2.5.0
-  dio: ^5.4.3
-  connectivity_plus: ^6.0.3
+  flutter_secure_storage: ^9.2.4
+  shared_preferences: ^2.2.3
+  connectivity_plus: ^6.1.5
 
   # Features
   mobile_scanner: ^7.0.0
   openfoodfacts: ^3.30.2
+  dio: ^5.9.0
   url_launcher: ^6.2.6
   flutter_local_notifications: ^17.2.2
   pdf: ^3.10.8
   fl_chart: ^0.68.0
   image_picker: ^1.1.1
 
-  # Storage & security
-  flutter_secure_storage: ^9.0.0
+  # Storage
   hive_flutter: ^1.1.0
   hive: ^2.2.3
 
-  # Navigation & UI
-  go_router: ^13.2.5
+  # UI
   intl: ^0.20.2
   path_provider: ^2.1.3
   share_plus: ^12.0.1
@@ -55,6 +50,7 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   cupertino_icons: ^1.0.8
+  uuid: ^4.5.3
 
 dev_dependencies:
   flutter_test:
@@ -64,13 +60,7 @@ dev_dependencies:
   mockito: ^5.4.4
   build_runner: ^2.4.9
   drift_dev: ^2.18.0
-  riverpod_generator: ^2.4.0
   flutter_lints: ^3.0.0
-
-# Override to use sqlcipher instead of regular sqlite3
-dependency_overrides:
-  sqlite3_flutter_libs:
-    path: ./custom_sqlcipher_override
 
 flutter:
   uses-material-design: true

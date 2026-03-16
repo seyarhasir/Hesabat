@@ -64,6 +64,10 @@ class SyncNotifier extends StateNotifier<SyncState> {
   Future<void> initialize() async {
     await _refreshPending();
 
+    if (ConnectivityService.instance.isOnline) {
+      await syncNow(force: true);
+    }
+
     _connectivitySub = ConnectivityService.instance.onlineStream.listen((online) async {
       if (online) {
         await syncNow(force: true);
@@ -74,6 +78,9 @@ class SyncNotifier extends StateNotifier<SyncState> {
 
     _pollTimer = Timer.periodic(const Duration(seconds: 20), (_) async {
       await _refreshPending();
+      if (ConnectivityService.instance.isOnline && state.pendingCount > 0 && state.status != SyncUiStatus.syncing) {
+        await syncNow(force: true);
+      }
     });
   }
 
@@ -111,6 +118,9 @@ class SyncNotifier extends StateNotifier<SyncState> {
           state = state.copyWith(processed: p.processed, total: p.total);
         },
       );
+
+      await _service.pullFromCloud();
+
       _retryStep = 0;
       _retryTimer?.cancel();
       await _refreshPending();

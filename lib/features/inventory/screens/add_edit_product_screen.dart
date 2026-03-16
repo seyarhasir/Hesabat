@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' show Value;
+import 'package:uuid/uuid.dart';
 import '../../../core/auth/guest_mode_service.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/database/database_provider.dart';
@@ -392,7 +393,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
     final syncEnabled = !(await GuestModeService.isGuestMode());
     final now = DateTime.now();
     final nowIso = now.toIso8601String();
-    final productId = _isEditing ? widget.product!.id : 'local_prod_${DateTime.now().millisecondsSinceEpoch}';
+    final productId = _isEditing ? widget.product!.id : const Uuid().v4();
     final nameDari = _nameDariController.text.trim();
     final nameEn = _nameEnController.text.trim().isEmpty ? null : _nameEnController.text.trim();
     final barcode = _barcodeController.text.trim().isEmpty ? null : _barcodeController.text.trim();
@@ -431,6 +432,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
             payload: {
               'id': productId,
               'shop_id': shopId,
+              'name': nameDari,
               'name_dari': nameDari,
               'name_en': nameEn,
               'barcode': barcode,
@@ -470,6 +472,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
             payload: {
               'id': productId,
               'shop_id': shopId,
+              'name': nameDari,
               'name_dari': nameDari,
               'name_en': nameEn,
               'barcode': barcode,

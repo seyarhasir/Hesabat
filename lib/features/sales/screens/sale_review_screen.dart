@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' show Value;
+import 'package:uuid/uuid.dart';
 
 import '../../../core/auth/guest_mode_service.dart';
 import '../../../core/database/app_database.dart';
@@ -727,7 +728,7 @@ class _SaleReviewScreenState extends ConsumerState<SaleReviewScreen> {
 
     final db = ref.read(databaseProvider);
     final shopId = ref.read(currentShopIdProvider);
-    final saleId = 'local_sale_${DateTime.now().millisecondsSinceEpoch}';
+    final saleId = const Uuid().v4();
     final totalInSelected = _afnToSelected(total);
     final subtotalInSelected = _afnToSelected(subtotal);
     final discountInSelected = _afnToSelected(_discount);
@@ -779,7 +780,7 @@ class _SaleReviewScreenState extends ConsumerState<SaleReviewScreen> {
       }
 
       for (final item in items) {
-        final saleItemId = 'local_item_${DateTime.now().microsecondsSinceEpoch}';
+        final saleItemId = const Uuid().v4();
         final productId = item['productId']?.toString();
         final quantity = (item['quantity'] as num?)?.toDouble() ?? 0;
         final price = (item['price'] as num?)?.toDouble() ?? 0;
@@ -830,6 +831,7 @@ class _SaleReviewScreenState extends ConsumerState<SaleReviewScreen> {
                 payload: {
                   'id': product.id,
                   'shop_id': product.shopId,
+                  'name': product.nameDari,
                   'name_dari': product.nameDari,
                   'name_pashto': product.namePashto,
                   'name_en': product.nameEn,
@@ -848,7 +850,7 @@ class _SaleReviewScreenState extends ConsumerState<SaleReviewScreen> {
       }
 
       if (isCreditSale && _selectedCustomerId != null) {
-        final debtId = 'local_debt_${DateTime.now().millisecondsSinceEpoch}';
+        final debtId = const Uuid().v4();
         await db.debtsDao.insertDebt(
           DebtsCompanion(
             id: Value(debtId),

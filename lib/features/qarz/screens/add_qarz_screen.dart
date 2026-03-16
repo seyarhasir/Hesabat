@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../core/auth/guest_mode_service.dart';
 import '../../../core/database/app_database.dart';
@@ -321,7 +322,7 @@ class _AddQarzScreenState extends ConsumerState<AddQarzScreen> {
         customerName = _newNameController.text.trim();
         final phone = _newPhoneController.text.trim().isEmpty ? null : _newPhoneController.text.trim();
 
-        customerId = 'local_cust_${DateTime.now().millisecondsSinceEpoch}';
+        customerId = const Uuid().v4();
         await db.customersDao.insertCustomer(
           CustomersCompanion(
             id: Value(customerId),
@@ -351,7 +352,7 @@ class _AddQarzScreenState extends ConsumerState<AddQarzScreen> {
         }
       }
 
-      final debtId = 'local_debt_${DateTime.now().millisecondsSinceEpoch}';
+      final debtId = const Uuid().v4();
       await db.debtsDao.insertDebt(
         DebtsCompanion(
           id: Value(debtId),

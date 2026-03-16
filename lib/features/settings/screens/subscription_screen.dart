@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/auth/auth_provider.dart';
+import '../../../core/auth/auth_state_notifier.dart';
 import '../../../core/utils/number_system_formatter.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../core/settings/shop_profile_service.dart';
@@ -16,7 +16,7 @@ class SubscriptionScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final lang = Localizations.localeOf(context).languageCode;
-    final authState = ref.watch(authProvider);
+    final authState = ref.watch(authStateNotifierProvider);
     String nf(num v, {int d = 0}) => NumberSystemFormatter.formatFixed(v, fractionDigits: d);
     final cs = Theme.of(context).colorScheme;
 
@@ -26,7 +26,7 @@ class SubscriptionScreen extends ConsumerWidget {
         future: ShopProfileService.loadWithCloudFallback(),
         builder: (context, snapshot) {
           final profile = snapshot.data;
-          final isGuest = authState.isGuest;
+          final isGuest = authState.status != AuthStatus.authenticated;
           
           String planDescription = isGuest 
               ? _tr(lang, 'Demo Mode', 'حالت آزمایشی', 'ازمایښتي حالت')

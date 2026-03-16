@@ -1,43 +1,43 @@
-import 'dart:async';
-
 import 'package:connectivity_plus/connectivity_plus.dart';
 
 class ConnectivityService {
-  ConnectivityService._();
-  static final ConnectivityService instance = ConnectivityService._();
-
-  final Connectivity _connectivity = Connectivity();
-  final StreamController<bool> _onlineController = StreamController<bool>.broadcast();
-
-  StreamSubscription<List<ConnectivityResult>>? _subscription;
-  bool _isOnline = true;
-
-  bool get isOnline => _isOnline;
-  Stream<bool> get onlineStream => _onlineController.stream;
-
-  Future<void> initialize() async {
-    final initial = await _connectivity.checkConnectivity();
-    _setOnline(_containsOnline(initial));
-
-    await _subscription?.cancel();
-    _subscription = _connectivity.onConnectivityChanged.listen((results) {
-      _setOnline(_containsOnline(results));
-    });
+  ConnectivityService._internal()
+      : _connectivity = Connectivity(),
+        _checkConnectivityOverride = null {
+    _primeStatus();
   }
 
-  Future<void> dispose() async {
-    await _subscription?.cancel();
-    await _onlineController.close();
+  static final ConnectivityService instance = ConnectivityService._internal();
+
+  final Connectivity _connectivity;
+  final Future<List<ConnectivityResult>> Function()? _checkConnectivityOverride;
+  bool _lastKnownOnline = true;
+
+  ConnectivityService({
+    Connectivity? connectivity,
+    Future<List<ConnectivityResult>> Function()? checkConnectivity,
+  })  : _connectivity = connectivity ?? Connectivity(),
+        _checkConnectivityOverride = checkConnectivity;
+
+  bool get isOnline => _lastKnownOnline;
+
+  Stream<bool> get onlineStream {
+    return _connectivity.onConnectivityChanged.map((results) {
+      final online = results.any((r) => r != ConnectivityResult.none);
+      _lastKnownOnline = online;
+      return online;
+    }).distinct();
   }
 
-  bool _containsOnline(List<ConnectivityResult> results) {
-    if (results.isEmpty) return false;
-    return results.any((r) => r != ConnectivityResult.none);
+  Future<void> _primeStatus() async {
+    _lastKnownOnline = await isOnlineNow();
   }
 
-  void _setOnline(bool value) {
-    if (_isOnline == value) return;
-    _isOnline = value;
-    _onlineController.add(value);
+  Future<bool> isOnlineNow() async {
+    final results = await (_checkConnectivityOverride?.call() ??
+        _connectivity.checkConnectivity());
+    final online = results.any((r) => r != ConnectivityResult.none);
+    _lastKnownOnline = online;
+    return online;
   }
 }

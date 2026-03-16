@@ -60,8 +60,6 @@ class AppDatabase extends _$AppDatabase {
   int get schemaVersion => 1;
 
   static QueryExecutor _openConnection() {
-    // Ensure SQLCipher is used instead of standard SQLite
-    setupSqlCipher();
     return driftDatabase(
       name: 'hesabat_db',
       native: const DriftNativeOptions(

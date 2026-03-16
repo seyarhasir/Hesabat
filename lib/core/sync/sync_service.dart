@@ -167,6 +167,213 @@ class SyncService {
     return processed;
   }
 
+  Future<int> pullFromCloud() async {
+    final db = _db;
+    if (db == null) return 0;
+
+    final user = _supabase.auth.currentUser;
+    if (user == null) return 0;
+
+    final shopRow = await _supabase
+        .from('shops')
+        .select()
+        .eq('owner_id', user.id)
+        .order('updated_at', ascending: false)
+        .limit(1)
+        .maybeSingle();
+
+    if (shopRow == null) return 0;
+
+    final shopId = shopRow['id']?.toString();
+    if (shopId == null || shopId.isEmpty) return 0;
+
+    final now = DateTime.now();
+
+    await db.into(db.shops).insertOnConflictUpdate(
+          ShopsCompanion.insert(
+            id: Value(shopId),
+            ownerId: user.id,
+            name: (shopRow['name'] ?? 'My Shop').toString(),
+            nameDari: Value(_strOrNull(shopRow['name_dari'])),
+            phone: Value(_strOrNull(shopRow['phone'])),
+            city: Value((shopRow['city'] ?? 'Kabul').toString()),
+            district: Value(_strOrNull(shopRow['district'])),
+            shopType: Value((shopRow['shop_type'] ?? 'general').toString()),
+            currencyPref: Value((shopRow['currency_pref'] ?? 'AFN').toString()),
+            languagePref: Value((shopRow['language_pref'] ?? 'fa').toString()),
+            subscriptionStatus: Value((shopRow['subscription_status'] ?? 'trial').toString()),
+            trialEndsAt: Value(_dateOrNow(shopRow['trial_ends_at'], now.add(const Duration(days: 30)))),
+            subscriptionEndsAt: Value(_dateOrNull(shopRow['subscription_ends_at'])),
+            createdAt: Value(_dateOrNow(shopRow['created_at'], now)),
+            updatedAt: Value(_dateOrNow(shopRow['updated_at'], now)),
+            syncStatus: const Value('synced'),
+            syncedAt: Value(now),
+          ),
+        );
+
+    final products = await _supabase.from('products').select().eq('shop_id', shopId);
+    for (final r in products) {
+      final row = Map<String, dynamic>.from(r as Map);
+      await db.into(db.products).insertOnConflictUpdate(
+            ProductsCompanion.insert(
+              id: Value((row['id'] ?? '').toString()),
+              shopId: shopId,
+              nameDari: (row['name_dari'] ?? row['name'] ?? '').toString().isEmpty
+                  ? 'Unnamed product'
+                  : (row['name_dari'] ?? row['name']).toString(),
+              namePashto: Value(_strOrNull(row['name_pashto'])),
+              nameEn: Value(_strOrNull(row['name_en'])),
+              barcode: Value(_strOrNull(row['barcode'])),
+              price: Value(_numOrZero(row['price'])),
+              costPrice: Value(_numOrNull(row['cost_price'])),
+              stockQuantity: Value(_numOrZero(row['stock_quantity'])),
+              minStockAlert: Value(_numOrDefault(row['min_stock_alert'], 5)),
+              unit: Value((row['unit'] ?? 'piece').toString()),
+              categoryId: Value(_strOrNull(row['category_id'])),
+              imageUrl: Value(_strOrNull(row['image_url'])),
+              expiryDate: Value(_dateOrNull(row['expiry_date'])),
+              prescriptionRequired: Value((row['prescription_required'] ?? false) == true),
+              dosage: Value(_strOrNull(row['dosage'])),
+              manufacturer: Value(_strOrNull(row['manufacturer'])),
+              color: Value(_strOrNull(row['color'])),
+              sizeVariant: Value(_strOrNull(row['size_variant'])),
+              imei: Value(_strOrNull(row['imei'])),
+              serialNumber: Value(_strOrNull(row['serial_number'])),
+              weightGrams: Value(_numOrNull(row['weight_grams'])),
+              isActive: Value((row['is_active'] ?? true) == true),
+              createdAt: Value(_dateOrNow(row['created_at'], now)),
+              updatedAt: Value(_dateOrNow(row['updated_at'], now)),
+              syncStatus: const Value('synced'),
+              syncedAt: Value(now),
+              localId: Value(_strOrNull(row['local_id'])),
+            ),
+          );
+    }
+
+    final customers = await _supabase.from('customers').select().eq('shop_id', shopId);
+    for (final r in customers) {
+      final row = Map<String, dynamic>.from(r as Map);
+      await db.into(db.customers).insertOnConflictUpdate(
+            CustomersCompanion.insert(
+              id: Value((row['id'] ?? '').toString()),
+              shopId: shopId,
+              name: (row['name'] ?? '').toString().isEmpty ? 'Unknown customer' : row['name'].toString(),
+              phone: Value(_strOrNull(row['phone'])),
+              totalOwed: Value(_numOrZero(row['total_owed'])),
+              notes: Value(_strOrNull(row['notes'])),
+              lastInteractionAt: Value(_dateOrNull(row['last_interaction_at'])),
+              createdAt: Value(_dateOrNow(row['created_at'], now)),
+              updatedAt: Value(_dateOrNow(row['updated_at'], now)),
+              syncStatus: const Value('synced'),
+              syncedAt: Value(now),
+              localId: Value(_strOrNull(row['local_id'])),
+            ),
+          );
+    }
+
+    final sales = await _supabase.from('sales').select().eq('shop_id', shopId);
+    final saleIds = <String>[];
+    for (final r in sales) {
+      final row = Map<String, dynamic>.from(r as Map);
+      final saleId = (row['id'] ?? '').toString();
+      if (saleId.isEmpty) continue;
+      saleIds.add(saleId);
+
+      await db.into(db.sales).insertOnConflictUpdate(
+            SalesCompanion.insert(
+              id: Value(saleId),
+              shopId: shopId,
+              customerId: Value(_strOrNull(row['customer_id'])),
+              totalAmount: _numOrZero(row['total_amount']),
+              totalAfn: _numOrDefault(row['total_afn'], _numOrZero(row['total_amount'])),
+              discount: Value(_numOrDefault(row['discount'], 0)),
+              paymentMethod: Value((row['payment_method'] ?? 'cash').toString()),
+              currency: Value((row['currency'] ?? 'AFN').toString()),
+              exchangeRate: Value(_numOrDefault(row['exchange_rate'], 1)),
+              isCredit: Value((row['is_credit'] ?? false) == true),
+              note: Value(_strOrNull(row['note'])),
+              createdOffline: Value((row['created_offline'] ?? false) == true),
+              localId: Value(_strOrNull(row['local_id'])),
+              syncedAt: Value(_dateOrNull(row['synced_at']) ?? now),
+              createdAt: Value(_dateOrNow(row['created_at'], now)),
+              updatedAt: Value(_dateOrNow(row['updated_at'], now)),
+              syncStatus: const Value('synced'),
+            ),
+          );
+    }
+
+    if (saleIds.isNotEmpty) {
+      final saleItems = await _supabase.from('sale_items').select().inFilter('sale_id', saleIds);
+      for (final r in saleItems) {
+        final row = Map<String, dynamic>.from(r as Map);
+        await db.into(db.saleItems).insertOnConflictUpdate(
+              SaleItemsCompanion.insert(
+                id: Value((row['id'] ?? '').toString()),
+                saleId: (row['sale_id'] ?? '').toString(),
+                productId: Value(_strOrNull(row['product_id'])),
+                productNameSnapshot: (row['product_name_snapshot'] ?? '').toString().isEmpty
+                    ? 'Unknown item'
+                    : row['product_name_snapshot'].toString(),
+                quantity: _numOrZero(row['quantity']),
+                unitPrice: _numOrZero(row['unit_price']),
+                subtotal: _numOrZero(row['subtotal']),
+                createdAt: Value(_dateOrNow(row['created_at'], now)),
+                syncStatus: const Value('synced'),
+                syncedAt: Value(now),
+              ),
+            );
+      }
+    }
+
+    final debts = await _supabase.from('debts').select().eq('shop_id', shopId);
+    for (final r in debts) {
+      final row = Map<String, dynamic>.from(r as Map);
+      await db.into(db.debts).insertOnConflictUpdate(
+            DebtsCompanion.insert(
+              id: Value((row['id'] ?? '').toString()),
+              shopId: shopId,
+              customerId: (row['customer_id'] ?? '').toString(),
+              saleId: Value(_strOrNull(row['sale_id'])),
+              amountOriginal: _numOrZero(row['amount_original']),
+              amountPaid: Value(_numOrDefault(row['amount_paid'], 0)),
+              amountRemaining: Value(_numOrDefault(
+                row['amount_remaining'],
+                _numOrZero(row['amount_original']) - _numOrDefault(row['amount_paid'], 0),
+              )),
+              status: Value((row['status'] ?? 'open').toString()),
+              dueDate: Value(_dateOrNull(row['due_date'])),
+              lastReminderSentAt: Value(_dateOrNull(row['last_reminder_sent_at'])),
+              notes: Value(_strOrNull(row['notes'])),
+              createdAt: Value(_dateOrNow(row['created_at'], now)),
+              updatedAt: Value(_dateOrNow(row['updated_at'], now)),
+              syncStatus: const Value('synced'),
+              syncedAt: Value(now),
+            ),
+          );
+    }
+
+    final debtPayments = await _supabase.from('debt_payments').select().eq('shop_id', shopId);
+    for (final r in debtPayments) {
+      final row = Map<String, dynamic>.from(r as Map);
+      await db.into(db.debtPayments).insertOnConflictUpdate(
+            DebtPaymentsCompanion.insert(
+              id: Value((row['id'] ?? '').toString()),
+              debtId: (row['debt_id'] ?? '').toString(),
+              shopId: shopId,
+              amount: _numOrZero(row['amount']),
+              paymentMethod: Value((row['payment_method'] ?? 'cash').toString()),
+              currency: Value((row['currency'] ?? 'AFN').toString()),
+              notes: Value(_strOrNull(row['notes'])),
+              createdAt: Value(_dateOrNow(row['created_at'], now)),
+              syncStatus: const Value('synced'),
+              syncedAt: Value(now),
+            ),
+          );
+    }
+
+    return products.length + customers.length + sales.length + debts.length + debtPayments.length;
+  }
+
   Future<void> resolveConflict({
     required String queueId,
     required ConflictResolutionChoice choice,
@@ -325,5 +532,39 @@ class SyncService {
       default:
         throw Exception('Unsupported operation: $op');
     }
+  }
+
+  String? _strOrNull(Object? value) {
+    if (value == null) return null;
+    final s = value.toString().trim();
+    return s.isEmpty ? null : s;
+  }
+
+  DateTime? _dateOrNull(Object? value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    return DateTime.tryParse(value.toString());
+  }
+
+  DateTime _dateOrNow(Object? value, DateTime fallback) {
+    return _dateOrNull(value) ?? fallback;
+  }
+
+  double _numOrZero(Object? value) {
+    if (value == null) return 0;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString()) ?? 0;
+  }
+
+  double _numOrDefault(Object? value, double fallback) {
+    if (value == null) return fallback;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString()) ?? fallback;
+  }
+
+  double? _numOrNull(Object? value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString());
   }
 }

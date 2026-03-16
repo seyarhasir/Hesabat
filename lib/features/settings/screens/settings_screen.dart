@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../core/auth/auth_provider.dart';
+import '../../../core/auth/auth_state_notifier.dart';
 import '../../../core/settings/app_locale_provider.dart';
 import '../../../core/settings/number_system_provider.dart';
 import '../../../core/settings/app_theme_mode_provider.dart';
@@ -30,8 +30,8 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final authState = ref.watch(authProvider);
+    final authState = ref.watch(authStateNotifierProvider);
+    final isGuest = authState.status != AuthStatus.authenticated;
     final locale = ref.watch(appSettingsLocaleProvider);
     final numberSystem = ref.watch(appNumberSystemProvider);
     final calendarSystem = ref.watch(appCalendarSystemProvider);
@@ -71,9 +71,9 @@ class SettingsScreen extends ConsumerWidget {
             future: ShopProfileService.loadWithCloudFallback(),
             builder: (context, snapshot) {
               final profile = snapshot.data;
-              final subtitle = authState.isGuest
+              final subtitle = isGuest
                   ? _tr(context, 'Demo Shop', 'دکان آزمایشی', 'ازمایښتي دوکان')
-                  : (profile?.shopName?.isNotEmpty == true
+                  : (profile?.shopName.isNotEmpty == true
                       ? profile!.shopName
                       : _tr(context, 'Active Shop', 'دکان فعال', 'فعال دوکان'));
 
@@ -82,7 +82,7 @@ class SettingsScreen extends ConsumerWidget {
                 title: _tr(context, 'Shop Info', 'اطلاعات دکان', 'د دوکان معلومات'),
                 subtitle: subtitle,
                 leadingIcon: Icons.store_rounded,
-                onTap: () => _showShopProfile(context, isGuest: authState.isGuest),
+                onTap: () => _showShopProfile(context, isGuest: isGuest),
               );
             },
           ),
@@ -93,7 +93,6 @@ class SettingsScreen extends ConsumerWidget {
             future: ShopProfileService.loadWithCloudFallback(),
             builder: (context, snapshot) {
               final profile = snapshot.data;
-              final isGuest = authState.isGuest;
               
               String planName = isGuest 
                   ? _tr(context, 'Demo (Limited)', 'آزمایشی (محدود)', 'ازمایښتي (محدود)')
@@ -330,12 +329,12 @@ class SettingsScreen extends ConsumerWidget {
   Future<void> _showShopProfile(BuildContext context, {required bool isGuest}) async {
     final profile = await ShopProfileService.loadWithCloudFallback();
 
-    final shopName = profile?.shopName?.isNotEmpty == true
+    final shopName = profile?.shopName.isNotEmpty == true
         ? profile!.shopName
         : (isGuest
             ? _tr(context, 'Demo Shop', 'دکان آزمایشی', 'ازمایښتي دوکان')
             : _tr(context, 'My Shop', 'دکان من', 'زما دوکان'));
-    final shopType = profile?.shopType?.isNotEmpty == true
+    final shopType = profile?.shopType.isNotEmpty == true
         ? profile!.shopType
         : _tr(context, 'General Store', 'دکان عمومی', 'عمومي دوکان');
     final location = profile == null
@@ -667,11 +666,11 @@ class SettingsScreen extends ConsumerWidget {
           variant: AppButtonVariant.primary, // Using primary but could be danger if we had a danger variant
           onPressed: () async {
             Navigator.pop(context);
-            await ref.read(authProvider.notifier).signOut();
+            await ref.read(authStateNotifierProvider.notifier).signOutAtomic();
             await ShopProfileService.clear();
             await ShopProfileService.clearOnboardingFlag();
             if (context.mounted) {
-              Navigator.pushReplacementNamed(context, '/auth');
+              context.go('/auth');
             }
           },
         ),
