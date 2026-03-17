@@ -10,6 +10,7 @@ import '../../../core/sync/sync_service.dart';
 import '../../../core/utils/number_system_formatter.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/widgets/debt_badge.dart';
+import '../../../core/settings/privacy_provider.dart';
 
 /// Qarz (Debt) Dashboard Screen - Core feature of Hesabat
 class QarzDashboardScreen extends ConsumerStatefulWidget {
@@ -39,6 +40,13 @@ class _QarzDashboardScreenState extends ConsumerState<QarzDashboardScreen> {
       appBar: AppBar(
         title: Text(_tr('Qarz', 'قرض‌ها', 'قرضونه')),
         actions: [
+          IconButton(
+            icon: Icon(
+              ref.watch(amountsVisibilityProvider) ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+            ),
+            onPressed: () => ref.read(amountsVisibilityProvider.notifier).update((s) => !s),
+            tooltip: _tr('Toggle Visibility', 'تغییر وضعیت نمایش', 'د لیدلو بدلول'),
+          ),
           IconButton(icon: const Icon(Icons.filter_list), onPressed: _showSortOptions),
         ],
       ),
@@ -59,6 +67,9 @@ class _QarzDashboardScreenState extends ConsumerState<QarzDashboardScreen> {
             return days > 7;
           }).length;
 
+          final isVisible = ref.watch(amountsVisibilityProvider);
+          String _v(String text) => isVisible ? text : '• • • •';
+
           return Column(
             children: [
               // Hero number
@@ -76,7 +87,7 @@ class _QarzDashboardScreenState extends ConsumerState<QarzDashboardScreen> {
                     children: [
                       Text(_tr('Total owed to you', 'کل بدهی به شما', 'ټول پور چې درته پاتې دی'), style: theme.textTheme.titleMedium?.copyWith(color: cs.onSurface.withOpacity(0.7))),
                       const SizedBox(height: 8),
-                      Text('${_nf(totalOwed)} ؋', style: theme.textTheme.displaySmall?.copyWith(color: AppColors.warning, fontWeight: FontWeight.bold)),
+                      Text(_v('${_nf(totalOwed)} ؋'), style: theme.textTheme.displaySmall?.copyWith(color: AppColors.warning, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 14),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -196,6 +207,7 @@ class _QarzDashboardScreenState extends ConsumerState<QarzDashboardScreen> {
   }
 
   Widget _buildDebtCard(_DebtDisplay display, ColorScheme cs, ThemeData theme) {
+    final isVisible = ref.watch(amountsVisibilityProvider);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
@@ -239,7 +251,7 @@ class _QarzDashboardScreenState extends ConsumerState<QarzDashboardScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                       Text(_tr('Amount Owed', 'مبلغ بدهی', 'پور پاتې اندازه'), style: theme.textTheme.bodySmall),
-                      Text('${_nf(display.debt.amountRemaining)} ${_tr('AFN', '؋', '؋')}',
+                      Text(isVisible ? '${_nf(display.debt.amountRemaining)} ${_tr('AFN', '؋', '؋')}' : '• • • •',
                         style: theme.textTheme.titleLarge?.copyWith(color: AppColors.danger, fontWeight: FontWeight.bold)),
                   ],
                 ),

@@ -11,9 +11,14 @@ import '../../../shared/theme/app_layout.dart';
 import '../../../shared/widgets/app_stat_card.dart';
 import '../../../shared/widgets/sync_status_bar.dart';
 import '../../sales/providers/pending_scanned_barcode_result_provider.dart';
+import '../../sales/providers/sale_screen_mode_provider.dart';
 import '../../sales/screens/sale_screen.dart';
+import '../../../shared/widgets/transaction_card.dart';
 import '../../qarz/screens/qarz_dashboard_screen.dart';
+import '../../../core/settings/calendar_system_provider.dart';
+import '../../../core/utils/date_formatter.dart';
 import '../../more/screens/more_screen.dart';
+import '../../../core/settings/privacy_provider.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -47,6 +52,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 },
               ),
               actions: [
+                IconButton(
+                  icon: Icon(
+                    ref.watch(amountsVisibilityProvider) ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                  ),
+                  onPressed: () => ref.read(amountsVisibilityProvider.notifier).update((s) => !s),
+                  tooltip: t('Toggle Visibility', 'تغییر وضعیت نمایش', 'د لیدلو بدلول'),
+                ),
                 IconButton(
                   icon: const Icon(Icons.settings_outlined),
                   onPressed: () => Navigator.pushNamed(context, '/settings'),
@@ -181,6 +193,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     String t(String en, String fa, String ps) => isEn ? en : (isPs ? ps : fa);
     final db = ref.watch(databaseProvider);
     final shopId = ref.watch(currentShopIdProvider);
+    final calendarSystem = ref.watch(appCalendarSystemProvider);
+    final calendarType = calendarSystem == CalendarSystem.persian ? CalendarType.persian : CalendarType.gregorian;
 
     return FutureBuilder<ShopProfile?>(
       future: ShopProfileService.loadWithCloudFallback(),
@@ -204,150 +218,167 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 .where((s) => s.isCredit || s.paymentMethod == 'credit')
                 .fold<double>(0, (sum, s) => sum + s.totalAfn);
 
-            return StreamBuilder<List<Debt>>(
-              stream: db.debtsDao.watchDebtsByShopId(shopId),
-              builder: (context, debtSnapshot) {
-                final openDebts = (debtSnapshot.data ?? const <Debt>[]).where((d) => d.status != 'paid');
-                final totalQarz = openDebts.fold<double>(0, (sum, d) => sum + d.amountRemaining);
+            return FutureBuilder<double>(
+              future: db.productsDao.getInventoryValue(shopId),
+              builder: (context, invSnapshot) {
+                final inventoryValue = invSnapshot.data ?? 0.0;
+                final isVisible = ref.watch(amountsVisibilityProvider);
+                String _v(String text) => isVisible ? text : '• • • •';
 
-                return FutureBuilder<int>(
-                  future: db.productsDao.countLowStock(shopId),
-                  builder: (context, lowStockSnapshot) {
-                    final lowStockItems = lowStockSnapshot.data ?? 0;
+                return StreamBuilder<List<Debt>>(
+                  stream: db.debtsDao.watchDebtsByShopId(shopId),
+                  builder: (context, debtSnapshot) {
+                    final openDebts = debtSnapshot.data ?? const <Debt>[];
+                    final totalQarz = openDebts
+                        .where((d) => d.status != 'paid')
+                        .fold<double>(0, (sum, d) => sum + d.amountRemaining);
 
-                    return SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, AppSpacing.m, AppSpacing.screenPadding, AppSpacing.xl),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (!isSubscriptionActive) _buildExpiredBanner(context, t),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(AppSpacing.l),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [cs.primary, cs.primary.withOpacity(0.78)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: AppRadius.large,
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  t('Today\'s Sales', 'فروش امروز', 'د نن پلور'),
-                                  style: theme.textTheme.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
+                    return FutureBuilder<int>(
+                      future: db.productsDao.countLowStock(shopId),
+                      builder: (context, lowStockSnapshot) {
+                        final lowStockItems = lowStockSnapshot.data ?? 0;
+
+                        return SingleChildScrollView(
+                          padding: const EdgeInsets.fromLTRB(AppSpacing.screenPadding, AppSpacing.m, AppSpacing.screenPadding, AppSpacing.xl),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (!isSubscriptionActive) _buildExpiredBanner(context, t),
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(AppSpacing.l),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [cs.primary, cs.primary.withOpacity(0.78)],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: AppRadius.large,
                                 ),
-                                const SizedBox(height: AppSpacing.s),
-                                Text(
-                                  '${_nf(todaySales)} ؋',
-                                  style: theme.textTheme.displaySmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: AppSpacing.s),
-                                Wrap(
-                                  spacing: AppSpacing.s,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    _homeChip('💵 ${t('Cash', 'نقد', 'نغد')} ${_nf(todayCash)}'),
-                                    _homeChip('🤝 ${t('Qarz', 'قرض', 'قرض')} ${_nf(todayCredit)}'),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          t('Today\'s Sales', 'فروش امروز', 'د نن پلور'),
+                                          style: theme.textTheme.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
+                                        ),
+                                        _homeChip('📦 ${t('Inventory', 'موجودی کل', 'ټولیزه ذخیره')}: ${_v('${_nf(inventoryValue)} ؋')}', small: true),
+                                      ],
+                                    ),
+                                    const SizedBox(height: AppSpacing.s),
+                                    Text(
+                                      _v('${_nf(todaySales)} ؋'),
+                                      style: theme.textTheme.displaySmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                                    ),
+                                    const SizedBox(height: AppSpacing.s),
+                                    Wrap(
+                                      spacing: AppSpacing.s,
+                                      children: [
+                                        _homeChip('💵 ${t('Cash', 'نقد', 'نغد')} ${_v(_nf(todayCash))}'),
+                                        _homeChip('🤝 ${t('Qarz', 'قرض', 'قرض')} ${_v(_nf(todayCredit))}'),
+                                      ],
+                                    ),
                                   ],
                                 ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.m),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: AppStatCard(
-                                  title: t('💰 Qarz', '💰 قرض', '💰 قرض'),
-                                  value: '${_nf(totalQarz)} ؋',
-                                  subtitle: t('Total debt', 'کل بدهی', 'ټول پور'),
-                                  icon: Icons.handshake_rounded,
-                                  color: AppColors.warning,
-                                  onTap: () => setState(() => _currentTab = 2),
-                                ),
                               ),
-                              const SizedBox(width: AppSpacing.m),
-                              Expanded(
-                                child: AppStatCard(
-                                  title: t('📦 Low stock', '📦 کم‌موجود', '📦 کم ذخیره'),
-                                  value: t('${_nf(lowStockItems)} items', '${_nf(lowStockItems)} کالا', '${_nf(lowStockItems)} توکي'),
-                                  subtitle: t('Running low', 'کم‌موجود', 'کم شوی'),
-                                  icon: Icons.inventory_2_rounded,
-                                  color: AppColors.danger,
+                              const SizedBox(height: AppSpacing.m),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: AppStatCard(
+                                      title: t('💰 Qarz', '💰 قرض', '💰 قرض'),
+                                      value: _v('${_nf(totalQarz)} ؋'),
+                                      subtitle: t('Total debt', 'کل بدهی', 'ټول پور'),
+                                      color: AppColors.warning,
+                                      onTap: () => setState(() => _currentTab = 2),
+                                      showIconBackground: false,
+                                    ),
+                                  ),
+                                  const SizedBox(width: AppSpacing.m),
+                                  Expanded(
+                                    child: AppStatCard(
+                                      title: t('📦 Low stock', '📦 کم‌موجود', '📦 کم ذخیره'),
+                                      value: t('${_nf(lowStockItems)} items', '${_nf(lowStockItems)} کالا', '${_nf(lowStockItems)} توکي'),
+                                      subtitle: t('Running low', 'کم‌موجود', 'کم شوی'),
+                                      color: AppColors.danger,
+                                      showIconBackground: false,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: AppSpacing.sectionGap),
+                              Text(t('Quick actions', 'میانبرهای سریع', 'چټک کارونه'),
+                                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                              const SizedBox(height: AppSpacing.m),
+                              GridView.count(
+                                crossAxisCount: 2,
+                                childAspectRatio: 1.35,
+                                mainAxisSpacing: AppSpacing.m,
+                                crossAxisSpacing: AppSpacing.m,
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                children: [
+                                  _quickActionCard(
+                                    context,
+                                    icon: Icons.shopping_cart_checkout_rounded,
+                                    label: t('New sale', 'فروش جدید', 'نوی پلور'),
+                                    onTap: isSubscriptionActive
+                                        ? () => setState(() => _currentTab = 1)
+                                        : () => _showSubscriptionRequired(context, t),
+                                    filled: true,
+                                    disabled: !isSubscriptionActive,
+                                  ),
+                                  _quickActionCard(
+                                    context,
+                                    icon: Icons.handshake_rounded,
+                                    label: t('New qarz', 'قرض جدید', 'نوی قرض'),
+                                    onTap: isSubscriptionActive
+                                        ? () => Navigator.pushNamed(context, '/qarz/add-debt')
+                                        : () => _showSubscriptionRequired(context, t),
+                                    amber: true,
+                                    disabled: !isSubscriptionActive,
+                                  ),
+                                  _quickActionCard(
+                                    context,
+                                    icon: Icons.today_rounded,
+                                    label: t('Daily summary', 'خلاصه روزانه', 'ورځنی لنډیز'),
+                                    onTap: () => Navigator.pushNamed(context, '/reports/daily-summary'),
+                                  ),
+                                  _quickActionCard(
+                                    context,
+                                    icon: Icons.analytics_rounded,
+                                    label: t('Reports', 'گزارش‌ها', 'راپورونه'),
+                                    onTap: () => Navigator.pushNamed(context, '/reports'),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: AppSpacing.sectionGap),
+                              Text(t('Recent activity', 'فعالیت اخیر', 'وروستي فعالیت'),
+                                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                              const SizedBox(height: AppSpacing.s),
+                              _buildRecentSalesPreview(theme, t, cs, lang, calendarType),
+                              const SizedBox(height: AppSpacing.sectionGap),
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: SyncStatusBar(
+                                  status: _mapSyncStatus(syncState.status),
+                                  pendingCount: syncState.pendingCount,
+                                  onTap: () {
+                                    if (syncState.status == SyncUiStatus.conflict) {
+                                      Navigator.pushNamed(context, '/sync/conflicts');
+                                      return;
+                                    }
+                                    ref.read(syncProvider.notifier).syncNow(force: true);
+                                  },
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: AppSpacing.sectionGap),
-                          Text(t('Quick actions', 'میانبرهای سریع', 'چټک کارونه'),
-                              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                          const SizedBox(height: AppSpacing.m),
-                          GridView.count(
-                            crossAxisCount: 2,
-                            childAspectRatio: 1.35,
-                            mainAxisSpacing: AppSpacing.m,
-                            crossAxisSpacing: AppSpacing.m,
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            children: [
-                              _quickActionCard(
-                                context,
-                                icon: Icons.shopping_cart_checkout_rounded,
-                                label: t('New sale', 'فروش جدید', 'نوی پلور'),
-                                onTap: isSubscriptionActive
-                                    ? () => setState(() => _currentTab = 1)
-                                    : () => _showSubscriptionRequired(context, t),
-                                filled: true,
-                                disabled: !isSubscriptionActive,
-                              ),
-                              _quickActionCard(
-                                context,
-                                icon: Icons.handshake_rounded,
-                                label: t('New qarz', 'قرض جدید', 'نوی قرض'),
-                                onTap: isSubscriptionActive
-                                    ? () => Navigator.pushNamed(context, '/qarz/add-debt')
-                                    : () => _showSubscriptionRequired(context, t),
-                                amber: true,
-                                disabled: !isSubscriptionActive,
-                              ),
-                              _quickActionCard(
-                                context,
-                                icon: Icons.today_rounded,
-                                label: t('Daily summary', 'خلاصه روزانه', 'ورځنی لنډیز'),
-                                onTap: () => Navigator.pushNamed(context, '/reports/daily-summary'),
-                              ),
-                              _quickActionCard(
-                                context,
-                                icon: Icons.analytics_rounded,
-                                label: t('Reports', 'گزارش‌ها', 'راپورونه'),
-                                onTap: () => Navigator.pushNamed(context, '/reports'),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: AppSpacing.sectionGap),
-                          Text(t('Recent activity', 'فعالیت اخیر', 'وروستي فعالیت'),
-                              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                          const SizedBox(height: AppSpacing.s),
-                          _buildRecentSalesPreview(theme, t),
-                          const SizedBox(height: AppSpacing.sectionGap),
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: SyncStatusBar(
-                              status: _mapSyncStatus(syncState.status),
-                              pendingCount: syncState.pendingCount,
-                              onTap: () {
-                                if (syncState.status == SyncUiStatus.conflict) {
-                                  Navigator.pushNamed(context, '/sync/conflicts');
-                                  return;
-                                }
-                                ref.read(syncProvider.notifier).syncNow(force: true);
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
+                        );
+                      },
                     );
                   },
                 );
@@ -359,11 +390,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _homeChip(String text) {
+  Widget _homeChip(String text, {bool small = false}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: small ? 8 : AppSpacing.s, vertical: small ? 4 : 6),
       decoration: BoxDecoration(color: Colors.white.withOpacity(0.16), borderRadius: BorderRadius.circular(20)),
-      child: Text(text, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12)),
+      child: Text(text, style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: small ? 10 : 12)),
     );
   }
 
@@ -412,7 +443,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         title: Text(t('Subscription Required', 'اشتراک لازم است', 'ګډون ته اړتیا ده')),
         content: Text(t(
           'Your subscription has expired. Please renew to add new sales or customers.',
-          'اشتراک شما تمام شده است. لطفاً برای ثبت فروش یا مشتری جدید آن را تمدید کنید.',
+          'اشتراک شما تمام شده است. لطفماً برای ثبت فروش یا مشتری جدید آن را تمدید کنید.',
           'ستاسو ګډون پای ته رسیدلی. مهرباني وکړئ د نوي پلور یا پېرودونکو اضافه کولو لپاره تمدید کړئ.'
         )),
         actions: [
@@ -476,7 +507,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildRecentSalesPreview(ThemeData theme, String Function(String, String, String) t) {
+  Widget _buildRecentSalesPreview(ThemeData theme, String Function(String, String, String) t, ColorScheme cs, String lang, CalendarType calendarType) {
     final db = ref.watch(databaseProvider);
     final shopId = ref.watch(currentShopIdProvider);
 
@@ -494,40 +525,59 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               title: Text(t('No recent sales', 'فروش اخیر وجود ندارد', 'وروستي پلور نشته')),
               subtitle: Text(t('Start a new sale to see activity', 'برای دیدن فعالیت، فروش جدید ثبت کنید', 'د فعالیت لپاره نوی پلور ثبت کړئ')),
               trailing: TextButton(
-                onPressed: () => setState(() => _currentTab = 1),
+                onPressed: () {
+                  ref.read(saleScreenModeProvider.notifier).state = 'new';
+                  setState(() => _currentTab = 1);
+                },
                 child: Text(t('New sale', 'فروش جدید', 'نوی پلور')),
               ),
             ),
           );
         }
 
-        return Card(
-          child: Column(
-            children: [
-              ...recent.asMap().entries.map((entry) {
-                final i = entry.key;
-                final sale = entry.value;
-                final isCredit = sale.isCredit || sale.paymentMethod == 'credit';
-                final color = isCredit ? AppColors.warning : AppColors.success;
-                return Column(
+        return Column(
+          children: [
+            ...recent.map((sale) {
+               final isVisible = ref.watch(amountsVisibilityProvider);
+              return Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.m),
+                child: TransactionCard(
+                  amount: sale.totalAfn,
+                  paymentMethod: sale.paymentMethod,
+                  createdAt: sale.createdAt,
+                  locale: lang,
+                  calendarType: calendarType,
+                  onTap: () => Navigator.pushNamed(context, '/sales/details', arguments: sale),
+                  isVisible: isVisible,
+                ),
+              );
+            }),
+            const SizedBox(height: AppSpacing.s),
+            InkWell(
+              onTap: () {
+                ref.read(saleScreenModeProvider.notifier).state = 'history';
+                setState(() => _currentTab = 1);
+              },
+              borderRadius: AppRadius.medium,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.s),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    ListTile(
-                      leading: Icon(isCredit ? Icons.credit_card_rounded : Icons.payments_rounded, color: color),
-                      title: Text('${_nf(sale.totalAfn)} ؋'),
-                      subtitle: Text('${_paymentMethodText(sale.paymentMethod, t)} • ${_timeAgoText(sale.createdAt, t)}'),
+                    Text(
+                      t('View all sales', 'نمایش همه فروش‌ها', 'ټول پلورونه وګورئ'),
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: cs.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    if (i < recent.length - 1) const Divider(height: 1),
+                    const SizedBox(width: 4),
+                    Icon(Icons.chevron_right_rounded, color: cs.primary, size: 18),
                   ],
-                );
-              }),
-              const Divider(height: 1),
-              ListTile(
-                title: Text(t('View all sales', 'نمایش همه فروش‌ها', 'ټول پلورونه وګورئ')),
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () => setState(() => _currentTab = 1),
+                ),
               ),
-            ],
-          ),
+            ),
+          ],
         );
       },
     );

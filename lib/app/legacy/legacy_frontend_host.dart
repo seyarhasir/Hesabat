@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/database/app_database.dart';
 
 import '../../features/home/screens/home_screen.dart' as home;
 import '../../features/inventory/screens/add_edit_product_screen.dart' as inventory_add;
@@ -21,6 +22,7 @@ import '../../features/reports/screens/sales_report_screen.dart' as reports_sale
 import '../../features/sales/screens/barcode_scanner_screen.dart' as sales_barcode;
 import '../../features/sales/screens/sale_confirmation_screen.dart' as sales_confirmation;
 import '../../features/sales/screens/sale_review_screen.dart' as sales_review;
+import '../../features/sales/screens/sale_details_screen.dart' as sales_details;
 import '../../features/sales/screens/sale_screen.dart' as sales;
 import '../../features/settings/screens/settings_screen.dart' as app_settings;
 import '../../features/settings/screens/subscription_screen.dart' as subscription;
@@ -93,6 +95,14 @@ class LegacyFrontendHost extends StatelessWidget {
         break;
       case '/sales/confirmation':
         page = const sales_confirmation.SaleConfirmationScreen();
+        break;
+      case '/sales/details':
+        final args = routeSettings.arguments;
+        if (args is Sale) {
+          page = sales_details.SaleDetailsScreen(sale: args);
+        } else {
+          page = const _UnknownLegacyRouteScreen(routeName: '/sales/details');
+        }
         break;
 
       case '/qarz':

@@ -123,13 +123,12 @@ class ProductsDao extends DatabaseAccessor<AppDatabase> with _$ProductsDaoMixin 
         .watch();
   }
 
-  /// Get inventory valuation (total value of all stock)
   Future<double> getInventoryValue(String shopId) async {
     final result = await customSelect(
       '''
-      SELECT SUM(stock_quantity * cost_price) as total_value
+      SELECT SUM(stock_quantity * COALESCE(cost_price, price, 0.0)) as total_value
       FROM products
-      WHERE shop_id = ? AND cost_price IS NOT NULL
+      WHERE shop_id = ? AND is_active = 1
       ''',
       variables: [Variable.withString(shopId)],
       readsFrom: {db.products},

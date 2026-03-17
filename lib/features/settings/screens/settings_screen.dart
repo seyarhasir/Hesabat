@@ -82,6 +82,7 @@ class SettingsScreen extends ConsumerWidget {
                 title: _tr(context, 'Shop Info', 'اطلاعات دکان', 'د دوکان معلومات'),
                 subtitle: subtitle,
                 leadingIcon: Icons.store_rounded,
+                leadingBgColor: Colors.blue,
                 onTap: () => _showShopProfile(context, isGuest: isGuest),
               );
             },
@@ -122,6 +123,7 @@ class SettingsScreen extends ConsumerWidget {
                 title: _tr(context, 'Current Plan', 'پلن فعلی', 'اوسنی پلان'),
                 subtitle: dateSubtitle ?? planName,
                 leadingIcon: Icons.card_membership_rounded,
+                leadingBgColor: Colors.orange,
                 trailing: isGuest
                     ? AppButton(
                         text: _tr(context, 'Upgrade', 'ارتقا', 'ارتقا'),
@@ -142,6 +144,7 @@ class SettingsScreen extends ConsumerWidget {
             title: _tr(context, 'Language', 'زبان', 'ژبه'),
             subtitle: currentLanguage,
             leadingIcon: Icons.translate_rounded,
+            leadingBgColor: Colors.green,
             onTap: () => _showLanguageSettings(context, ref),
           ),
           _buildSettingTile(
@@ -149,6 +152,7 @@ class SettingsScreen extends ConsumerWidget {
             title: _tr(context, 'Number System', 'سیستم اعداد', 'د شمېرو سیستم'),
             subtitle: currentNumberSystem,
             leadingIcon: Icons.pin_outlined,
+            leadingBgColor: Colors.indigo,
             onTap: () => _showNumberSystemSettings(context, ref),
           ),
           _buildSettingTile(
@@ -156,6 +160,7 @@ class SettingsScreen extends ConsumerWidget {
             title: _tr(context, 'Calendar', 'تقویم', 'کلیز'),
             subtitle: currentCalendarSystem,
             leadingIcon: Icons.calendar_month_outlined,
+            leadingBgColor: Colors.teal,
             onTap: () => _showCalendarSettings(context, ref),
           ),
           FutureBuilder<String>(
@@ -166,6 +171,7 @@ class SettingsScreen extends ConsumerWidget {
                 title: _tr(context, 'Currency', 'پول', 'اسعار'),
                 subtitle: snapshot.data ?? _tr(context, 'AFN (Afghan Afghani)', 'افغانی (AFN)', 'افغانۍ (AFN)'),
                 leadingIcon: Icons.payments_outlined,
+                leadingBgColor: Colors.greenAccent[700],
                 onTap: () => _showCurrencySettings(context),
               );
             },
@@ -175,6 +181,7 @@ class SettingsScreen extends ConsumerWidget {
             title: _tr(context, 'Theme', 'تم', 'بڼه'),
             subtitle: currentTheme,
             leadingIcon: Icons.dark_mode_outlined,
+            leadingBgColor: Colors.deepPurple,
             onTap: () => _showThemeSettings(context, ref),
           ),
           const SizedBox(height: AppSpacing.l),
@@ -185,6 +192,7 @@ class SettingsScreen extends ConsumerWidget {
             context,
             title: _tr(context, 'Help & FAQ', 'راهنما و سوالات', 'مرسته او پوښتنې'),
             leadingIcon: Icons.quiz_outlined,
+            leadingBgColor: Colors.amber[700],
             onTap: () => _showHelp(context),
           ),
           _buildSettingTile(
@@ -192,6 +200,7 @@ class SettingsScreen extends ConsumerWidget {
             title: _tr(context, 'Contact Support', 'تماس با پشتیبانی', 'د ملاتړ اړیکه'),
             subtitle: '+93 70 000 0000',
             leadingIcon: Icons.support_agent_rounded,
+            leadingBgColor: Colors.lightBlue,
             onTap: () => _contactSupport(context),
           ),
           _buildSettingTile(
@@ -199,6 +208,7 @@ class SettingsScreen extends ConsumerWidget {
             title: _tr(context, 'About', 'درباره', 'په اړه'),
             subtitle: _tr(context, 'Version 1.0.1', 'نسخه 1.0.1', 'نسخه 1.0.1'),
             leadingIcon: Icons.info_outline_rounded,
+            leadingBgColor: Colors.blueGrey,
             onTap: () => _showAbout(context),
           ),
           const SizedBox(height: AppSpacing.l),
@@ -210,7 +220,7 @@ class SettingsScreen extends ConsumerWidget {
             title: _tr(context, 'Sign Out', 'خروج از حساب', 'له حسابه وتل'),
             titleColor: AppColors.danger,
             leadingIcon: Icons.logout_rounded,
-            leadingColor: AppColors.danger,
+            leadingBgColor: AppColors.danger,
             onTap: () => _signOut(context, ref),
           ),
           const SizedBox(height: AppSpacing.xl),
@@ -267,7 +277,7 @@ class SettingsScreen extends ConsumerWidget {
     required IconData leadingIcon,
     Widget? trailing,
     Color? titleColor,
-    Color? leadingColor,
+    Color? leadingBgColor,
     VoidCallback? onTap,
   }) {
     final theme = Theme.of(context);
@@ -288,13 +298,13 @@ class SettingsScreen extends ConsumerWidget {
           child: Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
-                  color: (leadingColor ?? cs.primary).withOpacity(0.1),
+                  color: leadingBgColor ?? cs.primary,
                   borderRadius: AppRadius.small,
                 ),
-                child: Icon(leadingIcon, color: leadingColor ?? cs.primary, size: 20),
+                child: Icon(leadingIcon, color: Colors.white, size: 20),
               ),
               const SizedBox(width: AppSpacing.m),
               Expanded(
@@ -344,16 +354,16 @@ class SettingsScreen extends ConsumerWidget {
 
     if (!context.mounted) return;
 
-    _showAppDialog(
+    _showAppBottomSheet(
       context,
       title: _tr(context, 'Shop Profile', 'پروفایل دکان', 'د دوکان پېژندپاڼه'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           _buildInfoRow(context, Icons.store_rounded, _tr(context, 'Shop Name', 'نام دکان', 'د دوکان نوم'), shopName),
-          const SizedBox(height: AppSpacing.m),
+          const SizedBox(height: AppSpacing.l),
           _buildInfoRow(context, Icons.category_outlined, _tr(context, 'Business Type', 'نوع دکان', 'د دوکان ډول'), shopType),
-          const SizedBox(height: AppSpacing.m),
+          const SizedBox(height: AppSpacing.l),
           _buildInfoRow(context, Icons.location_on_outlined, _tr(context, 'Location', 'موقعیت', 'ځای'), location),
         ],
       ),
@@ -361,75 +371,89 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   void _showSubscriptionDetails(BuildContext context) {
-    _showAppDialog(
+    _showAppBottomSheet(
       context,
       title: _tr(context, 'Subscription', 'اشتراک', 'ګډون'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(_tr(context, 'Your Plan: Demo', 'پلن شما: آزمایشی', 'ستاسو پلان: ازمایښتي'), style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: AppSpacing.m),
+          Text(
+            _tr(context, 'Your Plan: Demo', 'پلن شما: آزمایشی', 'ستاسو پلان: ازمایښتي'), 
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: AppSpacing.l),
           _buildFeatureRow(context, _tr(context, 'Up to 10 products', 'تا 10 محصول', 'تر 10 محصولاتو پورې')),
           _buildFeatureRow(context, _tr(context, 'Up to 5 sales daily', 'تا 5 فروش روزانه', 'تر 5 ورځني پلور پورې')),
           _buildFeatureRow(context, _tr(context, 'Local storage only', 'فقط ذخیره محلی', 'یوازې محلي ساتنه')),
-          const SizedBox(height: AppSpacing.l),
+          const SizedBox(height: AppSpacing.xl),
           _buildUpgradeBanner(context),
+          const SizedBox(height: AppSpacing.xl),
+          AppButton(
+            text: _tr(context, 'Upgrade Plan', 'ارتقا پلن', 'پلان ارتقا'),
+            isFullWidth: true,
+            onPressed: () {
+              Navigator.pop(context);
+              _showUpgradeDialog(context);
+            },
+          ),
         ],
       ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text(_tr(context, 'Close', 'بستن', 'بندول'))),
-        AppButton(
-          text: _tr(context, 'Upgrade Plan', 'ارتقا پلن', 'پلان ارتقا'),
-          onPressed: () {
-            Navigator.pop(context);
-            _showUpgradeDialog(context);
-          },
-        ),
-      ],
     );
   }
 
   void _showUpgradeDialog(BuildContext context) {
-    _showAppDialog(
+    _showAppBottomSheet(
       context,
       title: _tr(context, 'Upgrade to Basic', 'ارتقا به پلن پایه', 'بنسټیز پلان ته ارتقا'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            _tr(context, '400 AFN / month', '۴۰۰ ؋ / ماه', '۴۰۰ ؋ / میاشت'),
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.primary,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              borderRadius: AppRadius.large,
+            ),
+            child: Text(
+              _tr(context, '400 AFN / month', '۴۰۰ ؋ / ماه', '۴۰۰ ؋ / میاشت'),
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
           ),
-          const SizedBox(height: AppSpacing.m),
+          const SizedBox(height: AppSpacing.xl),
           _buildFeatureRow(context, _tr(context, 'Unlimited Products & Sales', 'محصول و فروش نامحدود', 'نامحدود محصولات او پلور')),
           _buildFeatureRow(context, _tr(context, 'Cloud Data Backup', 'نسخه پشتیبان ابری', 'ورېځیز شاتړ')),
           _buildFeatureRow(context, _tr(context, 'WhatsApp Reminders', 'یادآوری واتساپ', 'د واتساپ یادونې')),
           _buildFeatureRow(context, _tr(context, 'Multi-device Sync', 'همگام‌سازی چند دستگاه', 'د څو وسیلو همغږي')),
+          const SizedBox(height: AppSpacing.xl),
+          Text(
+            _tr(context, 'Contact our team to activate your subscription.', 'برای فعال‌سازی اشتراک با تیم ما تماس بگیرید.', 'د ګډون فعالولو لپاره زموږ له ټیم سره اړیکه ونیسئ.'), 
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+            ),
+          ),
           const SizedBox(height: AppSpacing.l),
-          Text(_tr(context, 'Contact our team to activate your subscription.', 'برای فعال‌سازی اشتراک با تیم ما تماس بگیرید.', 'د ګډون فعالولو لپاره زموږ له ټیم سره اړیکه ونیسئ.'), textAlign: TextAlign.center),
+          AppButton(
+            text: _tr(context, 'Contact Team via WhatsApp', 'تماس با تیم در واتساپ', 'له ټیم سره په واتساپ اړیکه'),
+            icon: Icons.chat_bubble_outline_rounded,
+            isFullWidth: true,
+            onPressed: () {
+              Navigator.pop(context);
+              _launchWhatsApp('+93700000000', _tr(context, 'Hi, I want to upgrade my Hesabat plan.', 'سلام، می‌خواهم پلن حسابات را ارتقا بدهم.', 'سلام، زه غواړم د حسابات پلان ارتقا کړم.'));
+            },
+          ),
         ],
       ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text(_tr(context, 'Maybe Later', 'بعداً', 'وروسته'))),
-        AppButton(
-          text: _tr(context, 'Contact Team', 'تماس با تیم', 'له ټیم سره اړیکه'),
-          icon: Icons.chat_bubble_outline_rounded,
-          onPressed: () {
-            Navigator.pop(context);
-            _launchWhatsApp('+93700000000', _tr(context, 'Hi, I want to upgrade my Hesabat plan.', 'سلام، می‌خواهم پلن حسابات را ارتقا بدهم.', 'سلام، زه غواړم د حسابات پلان ارتقا کړم.'));
-          },
-        ),
-      ],
     );
   }
 
   void _showLanguageSettings(BuildContext context, WidgetRef ref) {
     final locale = ref.read(appSettingsLocaleProvider);
-    _showAppDialog(
+    _showAppBottomSheet(
       context,
       title: _tr(context, 'Language', 'زبان', 'ژبه'),
       content: Column(
@@ -444,6 +468,7 @@ class SettingsScreen extends ConsumerWidget {
               Navigator.pop(context);
             },
           ),
+          const SizedBox(height: 8),
           _buildSelectionTile(
             context,
             'دری (Dari)',
@@ -453,6 +478,7 @@ class SettingsScreen extends ConsumerWidget {
               Navigator.pop(context);
             },
           ),
+          const SizedBox(height: 8),
           _buildSelectionTile(
             context,
             'پښتو (Pashto)',
@@ -468,14 +494,16 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   void _showCurrencySettings(BuildContext context) {
-    _showAppDialog(
+    _showAppBottomSheet(
       context,
       title: _tr(context, 'Currency', 'پول', 'اسعار'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           _buildSelectionTile(context, _tr(context, 'AFN - Afghan Afghani', 'AFN - افغانی', 'AFN - افغانۍ'), isSelected: true, onTap: () => Navigator.pop(context)),
+          const SizedBox(height: 8),
           _buildSelectionTile(context, _tr(context, 'USD - US Dollar', 'USD - دالر', 'USD - ډالر'), onTap: () => Navigator.pop(context)),
+          const SizedBox(height: 8),
           _buildSelectionTile(context, _tr(context, 'PKR - Pakistani Rupee', 'PKR - روپیه', 'PKR - کلدارې'), onTap: () => Navigator.pop(context)),
         ],
       ),
@@ -484,7 +512,7 @@ class SettingsScreen extends ConsumerWidget {
 
   void _showThemeSettings(BuildContext context, WidgetRef ref) {
     final mode = ref.read(appThemeModeProvider);
-    _showAppDialog(
+    _showAppBottomSheet(
       context,
       title: _tr(context, 'Theme', 'تم', 'بڼه'),
       content: Column(
@@ -499,6 +527,7 @@ class SettingsScreen extends ConsumerWidget {
               Navigator.pop(context);
             },
           ),
+          const SizedBox(height: 8),
           _buildSelectionTile(
             context,
             _tr(context, 'Light', 'روشن', 'روښانه'),
@@ -508,6 +537,7 @@ class SettingsScreen extends ConsumerWidget {
               Navigator.pop(context);
             },
           ),
+          const SizedBox(height: 8),
           _buildSelectionTile(
             context,
             _tr(context, 'Dark', 'تاریک', 'تیاره'),
@@ -524,7 +554,7 @@ class SettingsScreen extends ConsumerWidget {
 
   void _showNumberSystemSettings(BuildContext context, WidgetRef ref) {
     final selected = ref.read(appNumberSystemProvider);
-    _showAppDialog(
+    _showAppBottomSheet(
       context,
       title: _tr(context, 'Number System', 'سیستم اعداد', 'د شمېرو سیستم'),
       content: Column(
@@ -539,6 +569,7 @@ class SettingsScreen extends ConsumerWidget {
               Navigator.pop(context);
             },
           ),
+          const SizedBox(height: 8),
           _buildSelectionTile(
             context,
             _tr(context, 'Farsi digits (۰-۹)', 'ارقام فارسی (۰-۹)', 'فارسي شمېرې (۰-۹)'),
@@ -555,7 +586,7 @@ class SettingsScreen extends ConsumerWidget {
 
   void _showCalendarSettings(BuildContext context, WidgetRef ref) {
     final selected = ref.read(appCalendarSystemProvider);
-    _showAppDialog(
+    _showAppBottomSheet(
       context,
       title: _tr(context, 'Calendar System', 'سیستم تقویم', 'د کلیز سیستم'),
       content: Column(
@@ -570,6 +601,7 @@ class SettingsScreen extends ConsumerWidget {
               Navigator.pop(context);
             },
           ),
+          const SizedBox(height: 8),
           _buildSelectionTile(
             context,
             _tr(context, 'Persian Calendar (Solar Hijri)', 'تقویم شمسی (هجری خورشیدی)', 'شمسی کلیز (هجري لمریز)'),
@@ -585,100 +617,238 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   void _showHelp(BuildContext context) {
-    _showAppDialog(
+    _showAppBottomSheet(
       context,
       title: _tr(context, 'Help & FAQ', 'راهنما و سوالات', 'مرسته او پوښتنې'),
-      content: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildFAQItem(context, _tr(context, 'How to record a sale?', 'چطور فروش ثبت کنم؟', 'پلور څنګه ثبت کړم؟'), _tr(context, 'Go to Sales, search for a product, and tap checkout.', 'به بخش فروش بروید، محصول جستجو کنید و ثبت را بزنید.', 'د پلور برخې ته لاړ شئ، محصول ولټوئ او ثبت یې کړئ.')),
-            _buildFAQItem(context, _tr(context, 'How to track debts?', 'چطور قرض‌ها را مدیریت کنم؟', 'قرضونه څنګه تعقیب کړم؟'), _tr(context, 'Check the Qarz section to manage customer balances.', 'به بخش قرض بروید و بدهی مشتریان را مدیریت کنید.', 'د قرض برخې ته لاړ شئ او د پېرودونکو پورونه مدیریت کړئ.')),
-            _buildFAQItem(context, _tr(context, 'Is offline use supported?', 'آیا آفلاین کار می‌کند؟', 'ایا اپ افلاین کار کوي؟'), _tr(context, 'Yes, Hesabat works perfectly without internet.', 'بله، حسابات بدون اینترنت هم کار می‌کند.', 'هو، حسابات له انټرنټ پرته هم ښه کار کوي.')),
-          ],
-        ),
+      content: Column(
+        children: [
+          _buildFAQItem(context, _tr(context, 'How to record a sale?', 'چطور فروش ثبت کنم؟', 'پلور څنګه ثبت کړم؟'), _tr(context, 'Go to Sales, search for a product, and tap checkout.', 'به بخش فروش بروید، محصول جستجو کنید و ثبت را بزنید.', 'د پلور برخې ته لاړ شئ، محصول ولټوئ او ثبت یې کړئ.')),
+          _buildFAQItem(context, _tr(context, 'How to track debts?', 'چطور قرض‌ها را مدیریت کنم؟', 'قرضونه څنګه تعقیب کړم؟'), _tr(context, 'Check the Qarz section to manage customer balances.', 'به بخش قرض بروید و بدهی مشتریان را مدیریت کنید.', 'د قرض برخې ته لاړ شئ او د پېرودونکو پورونه مدیریت کړئ.')),
+          _buildFAQItem(context, _tr(context, 'Is offline use supported?', 'آیا آفلاین کار می‌کند؟', 'ایا اپ افلاین کار کوي؟'), _tr(context, 'Yes, Hesabat works perfectly without internet.', 'بله، حسابات بدون اینترنت هم کار می‌کند.', 'هو، حسابات له انټرنټ پرته هم ښه کار کوي.')),
+        ],
       ),
     );
   }
 
   void _contactSupport(BuildContext context) {
-    _showAppDialog(
+    _showAppBottomSheet(
       context,
       title: _tr(context, 'Customer Support', 'پشتیبانی مشتری', 'د پېرودونکو ملاتړ'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           _buildInfoRow(context, Icons.support_agent_rounded, 'WhatsApp', '+93 70 000 0000'),
-          const SizedBox(height: AppSpacing.m),
+          const SizedBox(height: AppSpacing.l),
           _buildInfoRow(context, Icons.email_outlined, 'Email', 'support@hesabat.app'),
+          const SizedBox(height: AppSpacing.xl),
+          AppButton(
+            text: _tr(context, 'Start Chat on WhatsApp', 'شروع گفتگو در واتساپ', 'په واتساپ چټ پيل کړئ'),
+            icon: Icons.chat_outlined,
+            isFullWidth: true,
+            onPressed: () {
+              Navigator.pop(context);
+              _launchWhatsApp('+93700000000', _tr(context, 'Hi, I need assistance with Hesabat.', 'سلام، برای حسابات کمک می‌خواهم.', 'سلام، زه د حسابات لپاره مرستې ته اړتیا لرم.'));
+            },
+          ),
         ],
       ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text(_tr(context, 'Close', 'بستن', 'بندول'))),
-        AppButton(
-          text: _tr(context, 'Start Chat', 'شروع گفتگو', 'چټ پيل کړئ'),
-          icon: Icons.chat_outlined,
-          onPressed: () {
-            Navigator.pop(context);
-            _launchWhatsApp('+93700000000', _tr(context, 'Hi, I need assistance with Hesabat.', 'سلام، برای حسابات کمک می‌خواهم.', 'سلام، زه د حسابات لپاره مرستې ته اړتیا لرم.'));
-          },
-        ),
-      ],
     );
   }
 
   void _showAbout(BuildContext context) {
-    _showAppDialog(
+    _showAppBottomSheet(
       context,
       title: _tr(context, 'About', 'درباره', 'په اړه'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
-            'حسابات',
-            style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: AppSpacing.s),
-          Text(
-            'Hesabat - The Smart Shop',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.primary),
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Text(
+              'ح',
+              style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+            ),
           ),
           const SizedBox(height: AppSpacing.l),
+          Text(
+            'Hesabat - The Smart Shop',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.m),
           Text(
             _tr(context, 'The first offline-first business management app built specifically for Afghan shopkeepers.', 'اولین اپ مدیریت کسب‌وکار آفلاین‌اول برای دکانداران افغانستان.', 'د افغان دوکاندارانو لپاره لومړنی افلاین-اول کاروباري مدیریت اپ.'),
             textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+            ),
           ),
-          const SizedBox(height: AppSpacing.l),
-          Text(_tr(context, 'Version 1.0.1', 'نسخه 1.0.1', 'نسخه 1.0.1'), style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey)),
+          const SizedBox(height: AppSpacing.xl),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  _tr(context, 'Version 1.0.1', 'نسخه 1.0.1', 'نسخه 1.0.1'),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
   void _signOut(BuildContext context, WidgetRef ref) {
-    _showAppDialog(
+    _showAppBottomSheet(
       context,
       title: _tr(context, 'Sign Out', 'خروج از حساب', 'له حسابه وتل'),
-      content: Text(_tr(context, 'Are you sure you want to exit your account?', 'آیا مطمئن هستید که از حساب خارج شوید؟', 'ایا تاسو ډاډه یاست چې له حسابه ووځئ؟')),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text(_tr(context, 'Cancel', 'لغو', 'لغوه'))),
-        AppButton(
-          text: _tr(context, 'Sign Out', 'خروج', 'وتل'),
-          variant: AppButtonVariant.primary, // Using primary but could be danger if we had a danger variant
-          onPressed: () async {
-            Navigator.pop(context);
-            await ref.read(authStateNotifierProvider.notifier).signOutAtomic();
-            await ShopProfileService.clear();
-            await ShopProfileService.clearOnboardingFlag();
-            if (context.mounted) {
-              context.go('/auth');
-            }
-          },
-        ),
-      ],
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            _tr(context, 'Are you sure you want to exit your account?', 'آیا مطمئن هستید که از حساب خارج شوید؟', 'ایا تاسو ډاډه یاست چې له حسابه ووځئ؟'),
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(_tr(context, 'Cancel', 'لغو', 'لغوه')),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.m),
+              Expanded(
+                child: AppButton(
+                  text: _tr(context, 'Sign Out', 'خروج', 'وتل'),
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    await ref.read(authStateNotifierProvider.notifier).signOutAtomic();
+                    await ShopProfileService.clear();
+                    await ShopProfileService.clearOnboardingFlag();
+                    if (context.mounted) {
+                      context.go('/auth');
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
   // Helper Widgets
+  void _showAppBottomSheet(
+    BuildContext context, {
+    required String title,
+    required Widget content,
+    List<Widget>? actions,
+    bool scrollable = true,
+  }) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: cs.onSurface.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.m),
+            // Header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded),
+                    style: IconButton.styleFrom(
+                      backgroundColor: cs.onSurface.withOpacity(0.05),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 32),
+            // Content
+            if (scrollable)
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.xl),
+                  child: content,
+                ),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.fromLTRB(AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.xl),
+                child: content,
+              ),
+            // Actions
+            if (actions != null)
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: actions.map((a) => Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: a,
+                  )).toList(),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showAppDialog(BuildContext context, {required String title, required Widget content, List<Widget>? actions}) {
     showDialog(
       context: context,
@@ -741,11 +911,39 @@ class SettingsScreen extends ConsumerWidget {
 
   Widget _buildSelectionTile(BuildContext context, String title, {bool isSelected = false, VoidCallback? onTap}) {
     final cs = Theme.of(context).colorScheme;
-    return ListTile(
+    final theme = Theme.of(context);
+    
+    return InkWell(
       onTap: onTap,
-      title: Text(title),
-      trailing: isSelected ? Icon(Icons.check_circle_rounded, color: cs.primary) : null,
-      shape: RoundedRectangleBorder(borderRadius: AppRadius.medium),
+      borderRadius: AppRadius.medium,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.l, vertical: AppSpacing.m),
+        decoration: BoxDecoration(
+          color: isSelected ? cs.primary.withOpacity(0.08) : cs.surface,
+          borderRadius: AppRadius.medium,
+          border: Border.all(
+            color: isSelected ? cs.primary.withOpacity(0.2) : cs.outline.withOpacity(0.05),
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: isSelected ? cs.primary : cs.onSurface,
+                ),
+              ),
+            ),
+            if (isSelected)
+              Icon(Icons.check_circle_rounded, color: cs.primary, size: 22)
+            else
+              Icon(Icons.circle_outlined, color: cs.onSurface.withOpacity(0.1), size: 22),
+          ],
+        ),
+      ),
     );
   }
 

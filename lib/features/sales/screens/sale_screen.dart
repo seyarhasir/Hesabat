@@ -6,11 +6,13 @@ import '../../../core/settings/calendar_system_provider.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/utils/number_system_formatter.dart';
 import '../providers/pending_scanned_barcode_result_provider.dart';
+import '../providers/sale_screen_mode_provider.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_layout.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/product_card.dart';
+import '../../../shared/widgets/transaction_card.dart';
 
 /// Sale Recording Screen
 class SaleScreen extends ConsumerStatefulWidget {
@@ -24,7 +26,7 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
   final List<CartItem> _cart = [];
   final _searchController = TextEditingController();
   String _searchQuery = '';
-  String _mode = 'new'; // new | history
+  // Remove local _mode
   bool _isLoading = false;
   List<Product> _searchResults = [];
   List<Product> _recentProducts = [];
@@ -58,13 +60,15 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
     final cs = Theme.of(context).colorScheme;
     final theme = Theme.of(context);
 
+    final mode = ref.watch(saleScreenModeProvider);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(_mode == 'new'
+        title: Text(mode == 'new'
             ? _tr('New Sale', 'فروش جدید', 'نوی پلور')
             : _tr('Sales History', 'تاریخچه فروش', 'د پلور تاریخچه')),
         actions: [
-          if (_mode == 'new' && _cart.isNotEmpty)
+          if (mode == 'new' && _cart.isNotEmpty)
             TextButton.icon(
               onPressed: _clearCart,
               icon: const Icon(Icons.clear_all_rounded, size: 20),
@@ -89,16 +93,14 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
                   label: Text(_tr('History', 'تاریخچه', 'تاریخچه')),
                 ),
               ],
-              selected: {_mode},
+              selected: {mode},
               onSelectionChanged: (selection) {
-                setState(() {
-                  _mode = selection.first;
-                });
+                ref.read(saleScreenModeProvider.notifier).state = selection.first;
               },
             ),
           ),
 
-          if (_mode == 'new')
+          if (mode == 'new')
             Padding(
               padding: const EdgeInsets.all(AppSpacing.l),
               child: Container(
@@ -161,7 +163,7 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
 
           // Product list / history list
           Expanded(
-            child: _mode == 'history'
+            child: mode == 'history'
                 ? _buildSalesHistoryView(cs, theme)
                 : AnimatedSwitcher(
                     duration: const Duration(milliseconds: 180),
@@ -175,14 +177,14 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
                                     ? _buildRecentList(cs, theme)
                                     : AppEmptyState(
                                         title: _tr('Start a New Sale', 'فروش جدید را شروع کنید', 'نوی پلور پیل کړئ'),
-                                        description: _tr('Search or scan products to add to cart', 'برای افزودن به سبد، محصول را جستجو یا اسکن کنید', 'ټوکرۍ ته د زیاتولو لپاره محصولات ولټوئ یا سکن کړئ'),
+                                        description: _tr('Search or scan products to add to cart', 'برای افزودن به سبد، محصول را جستجو یا اسکن کنید', 'ټوکرۍ ته د زیاتولو برای اضافه کردن به سبد، محصول را جستجو یا اسکن کنید'),
                                         icon: Icons.add_shopping_cart_rounded,
                                       ),
                   ),
           ),
         ],
       ),
-      bottomNavigationBar: _mode != 'new' || _cart.isEmpty
+      bottomNavigationBar: mode != 'new' || _cart.isEmpty
           ? null
           : SafeArea(
               minimum: const EdgeInsets.fromLTRB(10, 0, 10, AppSpacing.l),
@@ -267,7 +269,7 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
             description: _tr('Record a new sale to see history here', 'برای دیدن تاریخچه، یک فروش جدید ثبت کنید', 'دلته د تاریخچې لپاره نوی پلور ثبت کړئ'),
             icon: Icons.receipt_long_rounded,
             actionLabel: _tr('Start New Sale', 'شروع فروش جدید', 'نوی پلور پیل کړئ'),
-            onAction: () => setState(() => _mode = 'new'),
+            onAction: () => ref.read(saleScreenModeProvider.notifier).state = 'new',
           );
         }
 
@@ -276,27 +278,18 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
           itemCount: sales.length,
           itemBuilder: (context, index) {
             final sale = sales[index];
-            final isCredit = sale.isCredit || sale.paymentMethod == 'credit';
-            final statusColor = isCredit ? AppColors.warning : AppColors.success;
+            final calendarSystem = ref.watch(appCalendarSystemProvider);
+            final calendarType = calendarSystem == CalendarSystem.persian ? CalendarType.persian : CalendarType.gregorian;
 
-            return Card(
-              margin: const EdgeInsets.only(bottom: AppSpacing.m),
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.m, vertical: AppSpacing.s),
-                leading: CircleAvatar(
-                  backgroundColor: statusColor.withOpacity(0.12),
-                  child: Icon(isCredit ? Icons.credit_card_rounded : Icons.payments_rounded, color: statusColor),
-                ),
-                title: Text(
-                  '${_nf(sale.totalAfn)} ${_tr('AFN', '؋', '؋')}',
-                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                subtitle: Text(
-                  '${_paymentMethodLabel(sale.paymentMethod)} • ${_formatSaleDate(sale.createdAt)}',
-                  style: theme.textTheme.bodySmall,
-                ),
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () => _openSaleDetails(sale),
+            return Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.m),
+              child: TransactionCard(
+                amount: sale.totalAfn,
+                paymentMethod: sale.paymentMethod,
+                createdAt: sale.createdAt,
+                locale: _lang,
+                calendarType: calendarType,
+                onTap: () => Navigator.pushNamed(context, '/sales/details', arguments: sale),
               ),
             );
           },
@@ -323,106 +316,7 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
     return DateFormatter.formatDateTime(dt, calendar: calendarType, locale: _lang);
   }
 
-  Future<void> _openSaleDetails(Sale sale) async {
-    final db = ref.read(databaseProvider);
-    final items = await db.salesDao.getSaleItems(sale.id);
-    if (!mounted) return;
-
-    final cs = Theme.of(context).colorScheme;
-    final theme = Theme.of(context);
-
-    showModalBottomSheet(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      builder: (context) {
-        return SafeArea(
-          child: ListView(
-            shrinkWrap: true,
-            padding: const EdgeInsets.fromLTRB(AppSpacing.l, AppSpacing.s, AppSpacing.l, AppSpacing.l),
-            children: [
-              Text(_tr('Sale Details', 'جزئیات فروش', 'د پلور جزییات'), style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
-              const SizedBox(height: AppSpacing.m),
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.m),
-                decoration: BoxDecoration(
-                  color: cs.surface,
-                  borderRadius: AppRadius.medium,
-                  border: Border.all(color: cs.outline.withOpacity(0.2)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(_tr('Date: ${_formatSaleDate(sale.createdAt)}', 'تاریخ: ${_formatSaleDate(sale.createdAt)}', 'نېټه: ${_formatSaleDate(sale.createdAt)}')),
-                    const SizedBox(height: 6),
-                    Text(_tr('Payment: ${_paymentMethodLabel(sale.paymentMethod)}', 'پرداخت: ${_paymentMethodLabel(sale.paymentMethod)}', 'تادیه: ${_paymentMethodLabel(sale.paymentMethod)}')),
-                    const SizedBox(height: AppSpacing.s),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: AppColors.warning.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        _tr('Total: ${_nf(sale.totalAfn)} ${_tr('AFN', '؋', '؋')}', 'مجموع: ${_nf(sale.totalAfn)} ${_tr('AFN', '؋', '؋')}', 'ټول: ${_nf(sale.totalAfn)} ${_tr('AFN', '؋', '؋')}'),
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          color: AppColors.warning,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.m),
-              ...items.map(
-                (item) => Container(
-                  margin: const EdgeInsets.only(bottom: AppSpacing.s),
-                  padding: const EdgeInsets.all(AppSpacing.s),
-                  decoration: BoxDecoration(
-                    color: cs.surface,
-                    borderRadius: AppRadius.medium,
-                    border: Border.all(color: cs.outline.withOpacity(0.15)),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(item.productNameSnapshot, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-                            const SizedBox(height: 4),
-                            Text(
-                              _tr('Qty: ${_nf(item.quantity)} × ${_nf(item.unitPrice)}', 'تعداد: ${_nf(item.quantity)} × ${_nf(item.unitPrice)}', 'شمېر: ${_nf(item.quantity)} × ${_nf(item.unitPrice)}'),
-                              style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.s),
-                      Text(
-                        '${_nf(item.subtotal)} ${_tr('AFN', '؋', '؋')}',
-                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const Divider(),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(_tr('Total', 'مجموع', 'ټول')),
-                trailing: Text(
-                  '${_nf(sale.totalAfn)} ${_tr('AFN', '؋', '؋')}',
-                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: AppColors.warning),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
+  // Removed _openSaleDetails modal implementation
 
   void _onSearch(String value) async {
     setState(() => _searchQuery = value);
@@ -541,7 +435,7 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
                       child: Icon(Icons.check_rounded, color: AppColors.success, size: 20),
                     )
                   : IconButton(
-                      icon: Icon(Icons.add_circle_rounded, color: cs.primary, size: 28),
+                      icon: Icon(Icons.add_circle_rounded, color: cs.primary.withValues(alpha: 0.6), size: 28),
                       onPressed: () => _addToCart(product),
                     ),
             ),
@@ -804,7 +698,7 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(_tr('Demo Limit Reached', 'محدودیت نسخه آزمایشی', 'د ازمایښتي نسخې حد پوره شو')),
-        content: Text(_tr('You have reached the maximum number of sales for demo mode.\n\nUpgrade to full version for unlimited sales.', 'تعداد مجاز فروش در نسخه آزمایشی تکمیل شده است.\n\nبرای فروش نامحدود ارتقا دهید.', 'تاسو په ازمایښتي حالت کې د پلور اعظمي حد ته رسېدلي یاست.\n\nد نامحدود پلور لپاره بشپړې نسخې ته ارتقا وکړئ.')),
+        content: Text(_tr('You have reached the maximum number of sales for demo mode.\n\nUpgrade to full version for unlimited sales.', 'تعداد مجاز فروش در نسخه آزمایشی تکمیل شده است.\n\nبرای فروش نامحدود ارتقا دهید.', 'تاسو په ازمایښتي حالت کې د پلور اعظمي حد ته رسیدلي یاست.\n\nد نامحدود پلور لپاره بشپړه نسخې ته ارتقا وکړئ.')),
         actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text(_tr('OK', 'باشه', 'سمه ده')))],
       ),
     );

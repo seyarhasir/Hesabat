@@ -85,96 +85,108 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen> {
   Future<void> _submitManualBarcode() async {
     final value = _normalizeBarcode(_manualBarcodeController.text);
     if (value.isEmpty) return;
+    FocusScope.of(context).unfocus();
     await _handleBarcode(value);
     _manualBarcodeController.clear();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.close_rounded),
-          onPressed: () => Navigator.pop(context),
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.close_rounded),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: Text(_tr('Scan barcode', 'اسکن بارکد', 'بارکوډ سکین')),
         ),
-        title: Text(_tr('Scan barcode', 'اسکن بارکد', 'بارکوډ سکین')),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            SizedBox(
-              height: 280,
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Theme.of(context).colorScheme.outline),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: MobileScanner(
-                  controller: _controller,
-                  onDetect: (BarcodeCapture capture) async {
-                    final List<Barcode> barcodes = capture.barcodes;
-                    if (barcodes.isEmpty) return;
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              SizedBox(
+                height: 280,
+                child: Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Theme.of(context).colorScheme.outline),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: MobileScanner(
+                    controller: _controller,
+                    onDetect: (BarcodeCapture capture) async {
+                      final List<Barcode> barcodes = capture.barcodes;
+                      if (barcodes.isEmpty) return;
 
-                    final normalizedCandidates = barcodes
-                        .map((b) => b.rawValue ?? b.displayValue ?? '')
-                        .map(_normalizeBarcode)
-                        .where((code) => code.isNotEmpty)
-                        .toList();
-                    if (normalizedCandidates.isEmpty) return;
+                      final normalizedCandidates = barcodes
+                          .map((b) => b.rawValue ?? b.displayValue ?? '')
+                          .map(_normalizeBarcode)
+                          .where((code) => code.isNotEmpty)
+                          .toList();
+                      if (normalizedCandidates.isEmpty) return;
 
-                    normalizedCandidates.sort((a, b) => b.length.compareTo(a.length));
-                    if (mounted) {
-                      setState(() => _lastDetected = normalizedCandidates.first);
-                    }
-                    await _handleBarcode(normalizedCandidates.first);
-                  },
+                      normalizedCandidates.sort((a, b) => b.length.compareTo(a.length));
+                      if (mounted) {
+                        setState(() => _lastDetected = normalizedCandidates.first);
+                      }
+                      await _handleBarcode(normalizedCandidates.first);
+                    },
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Text(_tr('Hold barcode inside the frame', 'بارکد را در مقابل دوربین نگه دارید', 'بارکوډ د چوکاټ دننه ونیسئ')),
-            if (_lastDetected.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Text(
-                _tr('Detected: $_lastDetected', 'تشخیص داده‌شده: $_lastDetected', 'تشخیص شوی: $_lastDetected'),
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.65)),
+              const SizedBox(height: 16),
+              Text(_tr('Hold barcode inside the frame', 'بارکد را در مقابل دوربین نگه دارید', 'بارکوډ د چوکاټ دننه ونیسئ')),
+              if (_lastDetected.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  _tr('Detected: $_lastDetected', 'تشخیص داده‌شده: $_lastDetected', 'تشخیص شوی: $_lastDetected'),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.65)),
+                ),
+              ],
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: () async {
+                  await _controller.toggleTorch();
+                  setState(() => _torchOn = !_torchOn);
+                },
+                icon: Icon(_torchOn ? Icons.flashlight_off_rounded : Icons.flashlight_on_rounded),
+                label: Text(_torchOn
+                    ? _tr('Turn torch off', 'خاموش کردن چراغ', 'چراغ بند کړئ')
+                    : _tr('Turn torch on', 'روشن کردن چراغ', 'چراغ بل کړئ')),
+              ),
+              const SizedBox(height: 24),
+              TextField(
+                controller: _manualBarcodeController,
+                keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.search,
+                decoration: InputDecoration(
+                  labelText: _tr('Manual barcode', 'بارکد دستی', 'لاسي بارکوډ'),
+                  hintText: _tr('Enter barcode number', 'شماره بارکد را وارد کنید', 'د بارکوډ شمېره دننه کړئ'),
+                  prefixIcon: const Icon(Icons.edit_rounded),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  filled: true,
+                  fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+                ),
+                onSubmitted: (_) => _submitManualBarcode(),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _submitManualBarcode,
+                  icon: const Icon(Icons.search_rounded),
+                  label: Text(_tr('Find / Add product', 'یافتن / افزودن محصول', 'محصول ومومئ / زیات کړئ')),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
               ),
             ],
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: () async {
-                await _controller.toggleTorch();
-                setState(() => _torchOn = !_torchOn);
-              },
-              icon: Icon(_torchOn ? Icons.flashlight_off_rounded : Icons.flashlight_on_rounded),
-              label: Text(_torchOn
-                  ? _tr('Turn torch off', 'خاموش کردن چراغ', 'چراغ بند کړئ')
-                  : _tr('Turn torch on', 'روشن کردن چراغ', 'چراغ بل کړئ')),
-            ),
-            const SizedBox(height: 14),
-            TextField(
-              controller: _manualBarcodeController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: _tr('Manual barcode', 'بارکد دستی', 'لاسي بارکوډ'),
-                hintText: _tr('Enter barcode number', 'شماره بارکد را وارد کنید', 'د بارکوډ شمېره دننه کړئ'),
-                prefixIcon: const Icon(Icons.edit_rounded),
-              ),
-              onSubmitted: (_) => _submitManualBarcode(),
-            ),
-            const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: _submitManualBarcode,
-                icon: const Icon(Icons.search_rounded),
-                label: Text(_tr('Find / Add product', 'یافتن / افزودن محصول', 'محصول ومومئ / زیات کړئ')),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

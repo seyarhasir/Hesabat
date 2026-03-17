@@ -159,14 +159,6 @@ class _InventoryReportScreenState extends ConsumerState<InventoryReportScreen> {
                     iconColor: Colors.orange,
                   ),
                   const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: isGeneratingPdf ? null : _exportPdf,
-                      icon: const Icon(Icons.picture_as_pdf_rounded),
-                      label: Text(isGeneratingPdf ? _tr('Generating...', 'در حال تولید...', 'جوړېږي...') : _tr('Download PDF', 'دانلود PDF', 'PDF ښکته کړئ')),
-                    ),
-                  ),
                 ],
               ),
             ),

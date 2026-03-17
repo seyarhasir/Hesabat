@@ -120,10 +120,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             color: cs.primary.withOpacity(0.1),
                             shape: BoxShape.circle,
                           ),
-                          child: Icon(
-                            Icons.lock_person_rounded,
-                            size: 32,
-                            color: cs.primary,
+                          child: Image.asset(
+                            'assets/images/new-logo-transparent.png',
+                            width: 48,
+                            height: 48,
+                            fit: BoxFit.contain,
                           ),
                         ),
                       if (_step == _AuthStep.passcode) const SizedBox(height: 24),

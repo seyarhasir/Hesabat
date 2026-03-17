@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../bootstrap/bootstrap.dart';
@@ -40,9 +41,22 @@ class _HesabatAppState extends ConsumerState<HesabatApp> {
     );
 
     _loadSettings();
+    _enableStatusBar();
+  }
+
+  void _enableStatusBar() {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarIconBrightness: Brightness.dark,
+    ));
   }
 
   Future<void> _loadSettings() async {
+    final stopwatch = Stopwatch()..start();
+
     await Future.wait([
       ref.read(appSettingsLocaleProvider.notifier).loadSavedLocale(),
       ref.read(appThemeModeProvider.notifier).loadSavedThemeMode(),
@@ -53,6 +67,12 @@ class _HesabatAppState extends ConsumerState<HesabatApp> {
     final activeShopId = await ref.read(localKvStoreProvider).readString('active_shop_id');
     if (activeShopId != null && activeShopId.isNotEmpty) {
       ref.read(currentShopIdProvider.notifier).state = activeShopId;
+    }
+
+    // Ensure splash screen stays visible for a minimum premium duration (2.0s)
+    final elapsed = stopwatch.elapsedMilliseconds;
+    if (elapsed < 2000) {
+      await Future.delayed(Duration(milliseconds: 2000 - elapsed));
     }
 
     if (!mounted) return;
@@ -83,8 +103,41 @@ class _HesabatAppState extends ConsumerState<HesabatApp> {
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
-        home: const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
+        home: Scaffold(
+          backgroundColor: Colors.white,
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset(
+                  'assets/images/new-logo-transparent.png',
+                  width: 180,
+                  height: 180,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Hesabat',
+                  style: TextStyle(
+                    fontSize: 36,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF003366),
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  'حسابات',
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF003366),
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       );
     }

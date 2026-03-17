@@ -10,6 +10,7 @@ class AppStatCard extends StatelessWidget {
   final Color? color;
   final VoidCallback? onTap;
   final bool isCompact;
+  final bool showIconBackground;
 
   const AppStatCard({
     super.key,
@@ -20,6 +21,7 @@ class AppStatCard extends StatelessWidget {
     this.color,
     this.onTap,
     this.isCompact = false,
+    this.showIconBackground = true,
   });
 
   @override
@@ -46,14 +48,17 @@ class AppStatCard extends StatelessWidget {
             Row(
               children: [
                 if (icon != null) ...[
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.s),
-                    decoration: BoxDecoration(
-                      color: primaryColor.withOpacity(0.1),
-                      borderRadius: AppRadius.medium,
-                    ),
-                    child: Icon(icon, color: primaryColor, size: 20),
-                  ),
+                  if (showIconBackground)
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.s),
+                      decoration: BoxDecoration(
+                        color: primaryColor.withOpacity(0.1),
+                        borderRadius: AppRadius.medium,
+                      ),
+                      child: Icon(icon, color: primaryColor, size: 20),
+                    )
+                  else
+                    Icon(icon, color: primaryColor, size: 20),
                   const SizedBox(width: AppSpacing.m),
                 ],
                 Expanded(
@@ -110,14 +115,17 @@ class AppStatCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (icon != null) ...[
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.s),
-                decoration: BoxDecoration(
-                  color: primaryColor.withOpacity(0.1),
-                  borderRadius: AppRadius.small,
-                ),
-                child: Icon(icon, color: primaryColor, size: 18),
-              ),
+              if (showIconBackground)
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.s),
+                  decoration: BoxDecoration(
+                    color: primaryColor.withOpacity(0.1),
+                    borderRadius: AppRadius.small,
+                  ),
+                  child: Icon(icon, color: primaryColor, size: 18),
+                )
+              else
+                Icon(icon, color: primaryColor, size: 18),
               const SizedBox(height: AppSpacing.m),
             ],
             Text(

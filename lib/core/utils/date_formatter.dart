@@ -81,10 +81,8 @@ class DateFormatter {
   static String getMonthName(int month, {CalendarType calendar = CalendarType.gregorian, String locale = 'fa'}) {
     if (calendar == CalendarType.persian) {
       final persianMonths = locale == 'en'
-          ? ['Farvardin', 'Ordibehesht', 'Khordad', 'Tir', 'Mordad', 'Shahrivar', 'Mehr', 'Aban', 'Azar', 'Dey', 'Bahman', 'Esfand']
-          : locale == 'ps'
-              ? ['وری', 'غویی', 'غبرګولی', 'چنګاښ', 'زمری', 'وږی', 'تله', 'لړم', 'ليندۍ', 'مرغومی', 'سلواغه', 'کب']
-              : ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'];
+          ? ['Hamal', 'Sawr', 'Jawza', 'Saratan', 'Asad', 'Sunbula', 'Mizan', 'Aqrab', 'Qaws', 'Jadee', 'Dalwa', 'Hoot']
+          : ['حمل', 'ثور', 'جوزا', 'سرطان', 'اسد', 'سنبله', 'میزان', 'عقرب', 'قوس', 'جدی', 'دلو', 'حوت'];
       return persianMonths[month - 1];
     }
     // Gregorian months
@@ -114,6 +112,24 @@ class DateFormatter {
     final startStr = formatDate(start, calendar: calendar, locale: locale);
     final endStr = formatDate(end, calendar: calendar, locale: locale);
     return '$startStr → $endStr';
+  }
+
+  /// Format date and time for full display (e.g. "17 March 2026, 14:30")
+  static String formatDisplayDateTime(DateTime date, {CalendarType calendar = CalendarType.gregorian, String locale = 'fa'}) {
+    final timeStr = formatTime(date);
+    if (calendar == CalendarType.persian) {
+      final jalali = Jalali.fromDateTime(date);
+      final monthName = getMonthName(jalali.month, calendar: calendar, locale: locale);
+      final dayName = getDayOfWeekName(date, calendar: calendar, locale: locale);
+      if (locale == 'en') return '$dayName, ${jalali.day} $monthName ${jalali.year}, $timeStr';
+      return '$dayName، ${jalali.day} $monthName ${jalali.year}، $timeStr';
+    }
+    
+    // Gregorian
+    final monthName = getMonthName(date.month, calendar: calendar, locale: locale);
+    final dayName = getDayOfWeekName(date, calendar: calendar, locale: locale);
+    if (locale == 'en') return '$dayName, ${date.day} $monthName ${date.year}, $timeStr';
+    return '$dayName، ${date.day} $monthName ${date.year}، $timeStr';
   }
 
   /// Get month name from a concrete date (handles Jalali month extraction when Persian calendar is selected)

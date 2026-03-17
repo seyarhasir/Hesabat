@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/database/database_provider.dart';
 import '../../../core/utils/number_system_formatter.dart';
+import '../../../core/settings/shop_profile_service.dart';
 
 class CustomerDebtDetailScreen extends ConsumerStatefulWidget {
   const CustomerDebtDetailScreen({super.key});
@@ -179,11 +180,13 @@ class _CustomerDebtDetailScreenState extends ConsumerState<CustomerDebtDetailScr
   }
 
   Future<void> _sendReminder(String customerName, String phone, double amount) async {
+    final profile = await ShopProfileService.loadWithCloudFallback();
+    final shopName = profile?.shopName ?? 'Hesabat';
     final message = _lang == 'ps'
-      ? 'ګرانه $customerName،%0A%0Aستاسو پور ${_nf(amount)} افغانۍ دی.'
+      ? 'ګرانه $customerName،%0A%0Aستاسو پور په $shopName کې ${_nf(amount)} افغانۍ دی.'
       : (_lang == 'fa'
-        ? 'محترم $customerName،%0A%0Aقرضه شما به مبلغ ${_nf(amount)} افغانی است.'
-        : 'Dear $customerName,%0A%0AYou currently owe ${_nf(amount)} AFN.');
+        ? 'محترم $customerName،%0A%0Aقرضه شما در $shopName به مبلغ ${_nf(amount)} افغانی است.'
+        : 'Dear $customerName,%0A%0AYou currently owe ${_nf(amount)} AFN to $shopName.');
     final cleanPhone = phone.replaceAll(RegExp(r'[^0-9+]'), '');
     final uri = Uri.parse('https://wa.me/$cleanPhone?text=$message');
     await launchUrl(uri, mode: LaunchMode.externalApplication);

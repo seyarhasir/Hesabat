@@ -1,8 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
 
 import '../../../core/utils/number_system_formatter.dart';
+import '../../../core/utils/date_formatter.dart';
+import '../../../core/settings/shop_profile_service.dart';
+import '../../../core/utils/receipt_service.dart';
+import '../providers/sale_screen_mode_provider.dart';
 
-class SaleConfirmationScreen extends StatelessWidget {
+class SaleConfirmationScreen extends ConsumerWidget {
   const SaleConfirmationScreen({super.key});
 
   String _tr(String lang, String en, String fa, [String? ps]) => lang == 'fa' ? fa : (lang == 'ps' ? (ps ?? fa) : en);
@@ -10,7 +22,7 @@ class SaleConfirmationScreen extends StatelessWidget {
   String _na(String value) => NumberSystemFormatter.apply(value);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final lang = Localizations.localeOf(context).languageCode;
     final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     final items = (args?['items'] as List<dynamic>? ?? const []).cast<Map<String, dynamic>>();
@@ -45,6 +57,21 @@ class SaleConfirmationScreen extends StatelessWidget {
               Text(
                 _tr(lang, 'Sale recorded!', 'فروش ثبت شد!', 'پلور ثبت شو!'),
                 style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 8),
+              FutureBuilder<ShopProfile?>(
+                future: ShopProfileService.loadWithCloudFallback(),
+                builder: (context, snapshot) {
+                  final shopName = snapshot.data?.shopName;
+                  if (shopName == null || shopName.isEmpty) return const SizedBox.shrink();
+                  return Text(
+                    shopName,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                  );
+                },
               ),
               const SizedBox(height: 16),
               Card(
@@ -146,7 +173,14 @@ class SaleConfirmationScreen extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
-                  onPressed: () {},
+                  onPressed: () => ReceiptService.shareReceipt(
+                    items: items,
+                    total: total,
+                    currency: currency,
+                    paymentMethod: paymentMethod,
+                    customerName: customerName,
+                    lang: lang,
+                  ),
                   icon: const Icon(Icons.send_rounded),
                   label: Text(_tr(lang, 'Send via WhatsApp', 'ارسال واتساپ', 'د واتساپ له لارې لېږل')),
                 ),
@@ -155,16 +189,19 @@ class SaleConfirmationScreen extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: () {},
+                  onPressed: () => ReceiptService.shareReceipt(
+                    items: items,
+                    total: total,
+                    currency: currency,
+                    paymentMethod: paymentMethod,
+                    customerName: customerName,
+                    lang: lang,
+                  ),
                   icon: const Icon(Icons.picture_as_pdf_rounded),
                   label: Text(_tr(lang, 'Save PDF', 'ذخیره PDF', 'PDF خوندي کول')),
                 ),
               ),
               const SizedBox(height: 8),
-              TextButton(
-                onPressed: () => Navigator.pushNamedAndRemoveUntil(context, '/sales', (_) => false),
-                child: Text(_tr(lang, 'New Sale', 'فروش جدید', 'نوی پلور')),
-              ),
               TextButton(
                 onPressed: () => Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false),
                 child: Text(_tr(lang, 'Back to Home', 'بازگشت به خانه', 'کور ته ستنېدل')),
