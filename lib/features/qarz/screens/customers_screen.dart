@@ -38,9 +38,12 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
         child: const Icon(Icons.person_add_alt_1_rounded),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      body: FutureBuilder<List<Customer>>(
-        future: db.customersDao.getCustomersByShopId(shopId),
+      body: StreamBuilder<List<Customer>>(
+        stream: db.customersDao.watchCustomersByShopId(shopId),
         builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
           final customers = [...(snapshot.data ?? const <Customer>[])];
           if (_query.trim().isNotEmpty) {
             final q = _query.toLowerCase();

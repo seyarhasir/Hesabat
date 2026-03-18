@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/auth/auth_state_notifier.dart';
 import '../../../core/utils/number_system_formatter.dart';
@@ -122,12 +123,51 @@ class SubscriptionScreen extends ConsumerWidget {
                       textAlign: TextAlign.center,
                       style: const TextStyle(fontSize: 13),
                     ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _contactAction(context, Icons.phone_rounded, 'Call', 'tel:+93772654965'),
+                        const SizedBox(width: 8),
+                        _contactAction(context, Icons.chat_outlined, 'WhatsApp', 'https://wa.me/93772654965'),
+                        const SizedBox(width: 8),
+                        _contactAction(context, Icons.email_outlined, 'Email', 'mailto:support@hesabat.app'),
+                      ],
+                    ),
                   ],
                 ),
               ),
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _contactAction(BuildContext context, IconData icon, String label, String url) {
+    return InkWell(
+      onTap: () async {
+        final uri = Uri.parse(url);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.amber.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.amber.withOpacity(0.3)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18, color: Colors.orange.shade800),
+            const SizedBox(width: 6),
+            Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.orange.shade900)),
+          ],
+        ),
       ),
     );
   }
