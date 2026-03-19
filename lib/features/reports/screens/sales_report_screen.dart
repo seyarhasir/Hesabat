@@ -10,6 +10,7 @@ import '../../../core/utils/date_formatter.dart';
 import '../../../core/settings/calendar_system_provider.dart';
 import '../providers/reports_provider.dart';
 import '../../../shared/theme/app_colors.dart';
+import '../../../shared/widgets/currency_display.dart';
 
 enum SalesReportRange { daily, weekly, monthly, custom }
 
@@ -358,7 +359,10 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
             Expanded(
               child: _metricCard(
                 title: _tr('Total sales', 'کل فروش', 'ټول پلور'),
-                value: '${_formatCurrency(_totalRevenue)} ${_tr('AFN', '؋', '؋')}',
+                valueWidget: CurrencyDisplay(
+                  amount: _totalRevenue,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
                 icon: Icons.payments_rounded,
                 color: AppColors.success,
               ),
@@ -380,7 +384,10 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
             Expanded(
               child: _metricCard(
                 title: _tr('Average', 'میانگین', 'اوسط'),
-                value: '${_formatCurrency(_averageSale)} ${_tr('AFN', '؋', '؋')}',
+                valueWidget: CurrencyDisplay(
+                  amount: _averageSale,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
                 icon: Icons.analytics_rounded,
                 color: AppColors.chart2,
               ),
@@ -517,8 +524,12 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
             decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 8),
-          Expanded(child: Text(label)),
-          Text('${_formatCurrency(amount)} ${_tr('AFN', '؋', '؋')}'),
+          Text(label),
+          const Spacer(),
+          CurrencyDisplay(
+            amount: amount,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
           const SizedBox(width: 8),
           SizedBox(
             width: 52,
@@ -609,7 +620,8 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
 
   Widget _metricCard({
     required String title,
-    required String value,
+    String? value,
+    Widget? valueWidget,
     required IconData icon,
     required Color color,
   }) {
@@ -634,12 +646,15 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
                 children: [
                   Text(title, style: const TextStyle(fontSize: 12)),
                   const SizedBox(height: 2),
-                  Text(
-                    value,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
+                  if (valueWidget != null)
+                    valueWidget
+                  else
+                    Text(
+                      value ?? '',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
                 ],
               ),
             ),

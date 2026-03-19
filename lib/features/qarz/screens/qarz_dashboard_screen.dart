@@ -10,7 +10,10 @@ import '../../../core/sync/sync_service.dart';
 import '../../../core/utils/number_system_formatter.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/widgets/debt_badge.dart';
+import '../../../shared/widgets/currency_display.dart';
 import '../../../core/settings/privacy_provider.dart';
+import '../../../core/settings/currency_preference_provider.dart';
+import '../../../core/utils/currency_formatter.dart';
 
 /// Qarz (Debt) Dashboard Screen - Core feature of Hesabat
 class QarzDashboardScreen extends ConsumerStatefulWidget {
@@ -87,7 +90,13 @@ class _QarzDashboardScreenState extends ConsumerState<QarzDashboardScreen> {
                     children: [
                       Text(_tr('Total owed to you', 'کل بدهی به شما', 'ټول پور چې درته پاتې دی'), style: theme.textTheme.titleMedium?.copyWith(color: cs.onSurface.withOpacity(0.7))),
                       const SizedBox(height: 8),
-                      Text(_v('${_nf(totalOwed)} ؋'), style: theme.textTheme.displaySmall?.copyWith(color: AppColors.warning, fontWeight: FontWeight.bold)),
+                      if (isVisible)
+                        CurrencyDisplay(
+                          amount: totalOwed,
+                          style: theme.textTheme.displaySmall?.copyWith(color: AppColors.warning, fontWeight: FontWeight.bold),
+                        )
+                      else
+                        Text('• • • •', style: theme.textTheme.displaySmall?.copyWith(color: AppColors.warning, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 14),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -251,8 +260,13 @@ class _QarzDashboardScreenState extends ConsumerState<QarzDashboardScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                       Text(_tr('Amount Owed', 'مبلغ بدهی', 'پور پاتې اندازه'), style: theme.textTheme.bodySmall),
-                      Text(isVisible ? '${_nf(display.debt.amountRemaining)} ${_tr('AFN', '؋', '؋')}' : '• • • •',
-                        style: theme.textTheme.titleLarge?.copyWith(color: AppColors.danger, fontWeight: FontWeight.bold)),
+                      if (isVisible)
+                        CurrencyDisplay(
+                          amount: display.debt.amountRemaining,
+                          style: theme.textTheme.titleLarge?.copyWith(color: AppColors.danger, fontWeight: FontWeight.bold),
+                        )
+                      else
+                        Text('• • • •', style: theme.textTheme.titleLarge?.copyWith(color: AppColors.danger, fontWeight: FontWeight.bold)),
                   ],
                 ),
                 Row(
@@ -328,12 +342,18 @@ class _QarzDashboardScreenState extends ConsumerState<QarzDashboardScreen> {
     );
   }
 
-  void _sendReminder(_DebtDisplay display) {
+  void _sendReminder(_DebtDisplay display) async {
+    final currency = ref.read(currencyPreferenceProvider);
+    final ratesSnapshot = await ref.read(exchangeRateSnapshotProvider.future);
+    final rate = ratesSnapshot.ratesFromAfn[currency] ?? 1.0;
+    final convertedAmount = display.debt.amountRemaining * rate;
+    final amountStr = CurrencyFormatter.format(convertedAmount, currency);
+
     final message = _lang == 'ps'
-      ? 'ګرانه ${display.customerName}،\n\nستاسو پور ${_nf(display.debt.amountRemaining)} افغانۍ دی.\nمهرباني وکړئ ژر تر ژره یې تادیه کړئ.\n\nمننه،\nحسابات'
+      ? 'ګرانه ${display.customerName}،\n\nستاسو پور $amountStr دی.\nمهرباني وکړئ ژر تر ژره یې تادیه کړئ.\n\nمننه،\nحسابات'
       : (_lang == 'fa'
-        ? 'محترم ${display.customerName}،\n\nقرضه شما به مبلغ ${_nf(display.debt.amountRemaining)} افغانی است.\nلطفاً در اسرع وقت پرداخت کنید.\n\nتشکر،\nحسابات'
-        : 'Dear ${display.customerName},\n\nYou currently owe ${_nf(display.debt.amountRemaining)} AFN.\nPlease pay as soon as possible.\n\nThank you,\nHesabat');
+        ? 'محترم ${display.customerName}،\n\nقرضه شما به مبلغ $amountStr است.\nلطفاً در اسرع وقت پرداخت کنید.\n\nتشکر،\nحسابات'
+        : 'Dear ${display.customerName},\n\nYou currently owe $amountStr.\nPlease pay as soon as possible.\n\nThank you,\nHesabat');
 
     showDialog(
       context: context,
@@ -391,7 +411,15 @@ class _QarzDashboardScreenState extends ConsumerState<QarzDashboardScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(_na(_tr('Amount owed: ${_nf(display.debt.amountRemaining)} AFN', 'مبلغ بدهی: ${_nf(display.debt.amountRemaining)} ؋', 'پور پاتې: ${_nf(display.debt.amountRemaining)} ؋')), style: const TextStyle(fontWeight: FontWeight.bold)),
+            Row(
+              children: [
+                Text('${_tr('Amount owed', 'مبلغ بدهی', 'پور پاتې')}: ', style: const TextStyle(fontWeight: FontWeight.bold)),
+                CurrencyDisplay(
+                  amount: display.debt.amountRemaining,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
             const SizedBox(height: 16),
             TextField(
               controller: amountController,
@@ -508,7 +536,16 @@ class _QarzDashboardScreenState extends ConsumerState<QarzDashboardScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_na(_tr('Payment of ${_nf(amount)} AFN recorded!', 'پرداخت ${_nf(amount)} ؋ ثبت شد!', 'د ${_nf(amount)} ؋ تادیه ثبت شوه!'))), backgroundColor: AppColors.success),
+          SnackBar(
+            content: Row(
+              children: [
+                Text(_tr('Payment of ', 'پرداخت ', 'د تادیې اندازه ')),
+                CurrencyDisplay(amount: amount, style: const TextStyle(color: Colors.white)),
+                Text(_tr(' recorded!', ' ثبت شد!', ' تادیه ثبت شوه!')),
+              ],
+            ),
+            backgroundColor: AppColors.success,
+          ),
         );
       }
     } catch (e) {

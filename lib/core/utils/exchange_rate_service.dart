@@ -114,24 +114,31 @@ class ExchangeRateService {
 
   Future<ExchangeRateSnapshot?> _fetchAndPersist() async {
     try {
-      final resp = await _dio.get('https://open.er-api.com/v6/latest/AFN');
+      final resp = await _dio.get('https://open.er-api.com/v6/latest/USD');
       final data = resp.data;
       if (data is! Map) return null;
 
       final ratesRaw = data['rates'];
       if (ratesRaw is! Map) return null;
 
-      final usd = (ratesRaw['USD'] as num?)?.toDouble();
-      final pkr = (ratesRaw['PKR'] as num?)?.toDouble();
-      if (usd == null || pkr == null || usd <= 0 || pkr <= 0) return null;
+      // Extract USD-based rates
+      final afnInUsd = (ratesRaw['AFN'] as num?)?.toDouble();
+      if (afnInUsd == null || afnInUsd <= 0) return null;
+
+      // Calculate AFN-based rates for all returned currencies
+      final ratesFromAfn = <String, double>{'AFN': 1.0};
+      for (final entry in ratesRaw.entries) {
+        final currency = entry.key.toString().toUpperCase();
+        final valueInUsd = (entry.value as num?)?.toDouble();
+        if (valueInUsd != null && valueInUsd > 0) {
+          // If 1 USD = 72 AFN and 1 USD = 281 PKR, then 1 AFN = 281 / 72 PKR
+          ratesFromAfn[currency] = valueInUsd / afnInUsd;
+        }
+      }
 
       final snapshot = ExchangeRateSnapshot(
         fetchedAt: DateTime.now(),
-        ratesFromAfn: {
-          'AFN': 1.0,
-          'USD': usd,
-          'PKR': pkr,
-        },
+        ratesFromAfn: ratesFromAfn,
       );
 
       await _persistToDb(snapshot);
@@ -146,50 +153,49 @@ class ExchangeRateService {
     final db = _db;
     if (db == null) return;
 
-    await db.batch((b) {
-      b.insertAll(db.exchangeRates, [
-        ExchangeRatesCompanion(
+    // We only persist common currencies to avoid bloating the DB
+    const common = {'AFN', 'USD', 'PKR', 'IRR', 'EUR', 'GBP', 'SAR', 'AED', 'TRY', 'CNY'};
+    
+    final companions = <ExchangeRatesCompanion>[];
+    for (final entry in snapshot.ratesFromAfn.entries) {
+      if (common.contains(entry.key) && entry.key != 'AFN') {
+        companions.add(ExchangeRatesCompanion(
           fromCurrency: const Value('AFN'),
-          toCurrency: const Value('USD'),
-          rate: Value(snapshot.ratesFromAfn['USD'] ?? 0.013),
+          toCurrency: Value(entry.key),
+          rate: Value(entry.value),
           fetchedAt: Value(snapshot.fetchedAt),
-        ),
-        ExchangeRatesCompanion(
-          fromCurrency: const Value('AFN'),
-          toCurrency: const Value('PKR'),
-          rate: Value(snapshot.ratesFromAfn['PKR'] ?? 3.6),
-          fetchedAt: Value(snapshot.fetchedAt),
-        ),
-      ]);
-    });
+        ));
+      }
+    }
+
+    if (companions.isNotEmpty) {
+      await db.batch((b) {
+        b.insertAll(db.exchangeRates, companions);
+      });
+    }
   }
 
   Future<ExchangeRateSnapshot?> _readFromDb() async {
     final db = _db;
     if (db == null) return null;
 
-    final usd = await (db.select(db.exchangeRates)
-          ..where((t) => t.fromCurrency.equals('AFN') & t.toCurrency.equals('USD'))
-          ..orderBy([(t) => OrderingTerm.desc(t.fetchedAt)])
-          ..limit(1))
-        .getSingleOrNull();
+    final latestRates = await (db.select(db.exchangeRates)
+          ..where((t) => t.fromCurrency.equals('AFN'))
+          ..orderBy([(t) => OrderingTerm.desc(t.fetchedAt)]))
+        .get();
 
-    final pkr = await (db.select(db.exchangeRates)
-          ..where((t) => t.fromCurrency.equals('AFN') & t.toCurrency.equals('PKR'))
-          ..orderBy([(t) => OrderingTerm.desc(t.fetchedAt)])
-          ..limit(1))
-        .getSingleOrNull();
+    if (latestRates.isEmpty) return null;
 
-    if (usd == null || pkr == null) return null;
-    final fetchedAt = usd.fetchedAt.isAfter(pkr.fetchedAt) ? usd.fetchedAt : pkr.fetchedAt;
+    final fetchedAt = latestRates.first.fetchedAt;
+    final rates = <String, double>{'AFN': 1.0};
+    
+    // Group by timestamp (within 1 minute) to reconstruct snapshot
+    for (final r in latestRates) {
+      if (r.fetchedAt.difference(fetchedAt).abs().inMinutes < 1) {
+        rates[r.toCurrency.toUpperCase()] = r.rate;
+      }
+    }
 
-    return ExchangeRateSnapshot(
-      fetchedAt: fetchedAt,
-      ratesFromAfn: {
-        'AFN': 1.0,
-        'USD': usd.rate,
-        'PKR': pkr.rate,
-      },
-    );
+    return ExchangeRateSnapshot(fetchedAt: fetchedAt, ratesFromAfn: rates);
   }
 }

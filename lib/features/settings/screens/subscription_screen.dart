@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/auth/auth_state_notifier.dart';
 import '../../../core/utils/number_system_formatter.dart';
 import '../../../shared/theme/app_colors.dart';
+import '../../../shared/widgets/currency_display.dart';
 import '../../../core/settings/shop_profile_service.dart';
 import '../../../core/settings/calendar_system_provider.dart';
 import '../../../core/utils/date_formatter.dart';
@@ -81,7 +82,7 @@ class SubscriptionScreen extends ConsumerWidget {
                 context,
                 lang: lang,
                 title: _tr(lang, 'Basic Plan', 'پلن پایه', 'بنسټیز پلان'),
-                price: nf(400),
+                price: 400,
                 period: _tr(lang, 'month', 'ماه', 'میاشت'),
                 features: [
                   _tr(lang, 'Unlimited products', 'محصولات نامحدود', 'نامحدود محصولات'),
@@ -94,11 +95,23 @@ class SubscriptionScreen extends ConsumerWidget {
                 context,
                 lang: lang,
                 title: _tr(lang, 'Annual Plan', 'پلن سالانه', 'کلنی پلان'),
-                price: nf(3600),
+                price: 4000,
                 period: _tr(lang, 'year', 'سال', 'کال'),
                 features: [
                   _tr(lang, 'Everything in Basic', 'همه امکانات پلن پایه', 'د بنسټیز پلان ټولې اسانتیاوې'),
-                  _tr(lang, 'Save ${nf(1200)} AFN', 'صرفه جویی ${nf(1200)} ؋', 'د ${nf(1200)} افغانیو سپما'),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(_tr(lang, 'Save ', 'صرفه جویی ', 'د ')),
+                      CurrencyDisplay(
+                        amount: 800, 
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      if (lang == 'en') const Text(' AFN'),
+                      if (lang == 'ps') const Text(' افغانیو سپما'),
+                    ],
+                  ),
                 ],
                 isPopular: true,
               ),
@@ -176,9 +189,9 @@ class SubscriptionScreen extends ConsumerWidget {
     BuildContext context, {
     required String lang,
     required String title,
-    required String price,
+    required double price,
     required String period,
-    required List<String> features,
+    required List<dynamic> features,
     bool isPopular = false,
   }) {
     final cs = Theme.of(context).colorScheme;
@@ -206,7 +219,10 @@ class SubscriptionScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.baseline,
               textBaseline: TextBaseline.alphabetic,
               children: [
-                Text('$price ؋', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                CurrencyDisplay(
+                  amount: price,
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
                 Text(' / $period', style: TextStyle(color: cs.onSurfaceVariant)),
               ],
             ),
@@ -214,10 +230,13 @@ class SubscriptionScreen extends ConsumerWidget {
             ...features.map((f) => Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Icon(Icons.check_circle, size: 18, color: cs.primary),
                   const SizedBox(width: 8),
-                  Text(f),
+                  Expanded(
+                    child: f is Widget ? f : Text(f.toString()),
+                  ),
                 ],
               ),
             )),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/utils/number_system_formatter.dart';
 import '../theme/app_layout.dart';
 import '../theme/app_colors.dart';
+import './currency_display.dart';
 
 class ProductCard extends StatelessWidget {
   final String name;
@@ -91,8 +92,8 @@ class ProductCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Row(
                     children: [
-                      Text(
-                        '${NumberSystemFormatter.formatFixed(price)} ${Localizations.localeOf(context).languageCode == 'en' ? 'AFN' : '؋'}',
+                      CurrencyDisplay(
+                        amount: price,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: cs.primary,
                           fontWeight: FontWeight.w600,

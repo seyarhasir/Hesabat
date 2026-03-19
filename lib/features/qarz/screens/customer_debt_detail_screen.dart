@@ -6,6 +6,9 @@ import '../../../core/database/app_database.dart';
 import '../../../core/database/database_provider.dart';
 import '../../../core/utils/number_system_formatter.dart';
 import '../../../core/settings/shop_profile_service.dart';
+import '../../../core/settings/currency_preference_provider.dart';
+import '../../../core/utils/currency_formatter.dart';
+import '../../../shared/widgets/currency_display.dart';
 
 class CustomerDebtDetailScreen extends ConsumerStatefulWidget {
   const CustomerDebtDetailScreen({super.key});
@@ -101,7 +104,15 @@ class _CustomerDebtDetailScreenState extends ConsumerState<CustomerDebtDetailScr
                               child: Text('📞 $customerPhone'),
                             ),
                           const SizedBox(height: 6),
-                            Text(_na('${_tr('Total debt', 'کل بدهی', 'ټول پور')}: ${_nf(_totalOwed)} ${_tr('AFN', '؋', '؋')}'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                            Row(
+                              children: [
+                                Text('${_tr('Total debt', 'کل بدهی', 'ټول پور')}: ', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                CurrencyDisplay(
+                                  amount: _totalOwed,
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
                           const SizedBox(height: 6),
                           Text(
                             _lastPaymentAt == null
@@ -161,12 +172,24 @@ class _CustomerDebtDetailScreenState extends ConsumerState<CustomerDebtDetailScr
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(_na(_tr('Debt: ${_nf(debt.amountOriginal)} AFN | Remaining: ${_nf(debt.amountRemaining)} AFN', 'قرض: ${_nf(debt.amountOriginal)} ؋ | باقیمانده: ${_nf(debt.amountRemaining)} ؋', 'پور: ${_nf(debt.amountOriginal)} ؋ | پاتې: ${_nf(debt.amountRemaining)} ؋'))),
+                              Row(
+                                children: [
+                                  Text(_tr('Debt: ', 'قرض: ', 'پور: ')),
+                                  CurrencyDisplay(amount: debt.amountOriginal),
+                                  Text(_tr(' | Remaining: ', ' | باقیمانده: ', ' | پاتې: ')),
+                                  CurrencyDisplay(amount: debt.amountRemaining),
+                                ],
+                              ),
                               const SizedBox(height: 4),
                               Text('${_tr('Status', 'وضعیت', 'حالت')}: ${debt.status == 'paid' ? _tr('Paid', 'پرداخت شد', 'تصفیه شو') : _tr('Open', 'باز', 'خلاص')}'),
                               if (payments.isNotEmpty) ...[
                                 const SizedBox(height: 8),
-                                ...payments.map((p) => Text(_na(_tr('💚 Payment ${_nf(p.amount)} AFN', '💚 پرداخت ${_nf(p.amount)} ؋', '💚 تادیه ${_nf(p.amount)} ؋')))),
+                                ...payments.map((p) => Row(
+                                      children: [
+                                        Text('💚 ${_tr('Payment ', 'پرداخت ', 'تادیه ')}'),
+                                        CurrencyDisplay(amount: p.amount),
+                                      ],
+                                    )),
                               ],
                             ],
                           ),
@@ -182,11 +205,17 @@ class _CustomerDebtDetailScreenState extends ConsumerState<CustomerDebtDetailScr
   Future<void> _sendReminder(String customerName, String phone, double amount) async {
     final profile = await ShopProfileService.loadWithCloudFallback();
     final shopName = profile?.shopName ?? 'Hesabat';
+    final currency = ref.read(currencyPreferenceProvider);
+    final ratesSnapshot = await ref.read(exchangeRateSnapshotProvider.future);
+    final rate = ratesSnapshot.ratesFromAfn[currency] ?? 1.0;
+    final convertedAmount = amount * rate;
+    final amountStr = CurrencyFormatter.format(convertedAmount, currency);
+
     final message = _lang == 'ps'
-      ? 'ګرانه $customerName،%0A%0Aستاسو پور په $shopName کې ${_nf(amount)} افغانۍ دی.'
+      ? 'ګرانه $customerName،%0A%0Aستاسو پور په $shopName کې $amountStr دی.'
       : (_lang == 'fa'
-        ? 'محترم $customerName،%0A%0Aقرضه شما در $shopName به مبلغ ${_nf(amount)} افغانی است.'
-        : 'Dear $customerName,%0A%0AYou currently owe ${_nf(amount)} AFN to $shopName.');
+        ? 'محترم $customerName،%0A%0Aقرضه شما در $shopName به مبلغ $amountStr است.'
+        : 'Dear $customerName,%0A%0AYou currently owe $amountStr to $shopName.');
     final cleanPhone = phone.replaceAll(RegExp(r'[^0-9+]'), '');
     final uri = Uri.parse('https://wa.me/$cleanPhone?text=$message');
     await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -207,8 +236,18 @@ class _CustomerDebtDetailScreenState extends ConsumerState<CustomerDebtDetailScr
               ...openDebts.map(
                 (d) => ListTile(
                   leading: const Icon(Icons.receipt_long_rounded),
-                  title: Text(_na(_tr('Remaining: ${_nf(d.amountRemaining)} AFN', 'باقیمانده: ${_nf(d.amountRemaining)} ؋', 'پاتې: ${_nf(d.amountRemaining)} ؋'))),
-                  subtitle: Text(_na(_tr('Original: ${_nf(d.amountOriginal)} AFN', 'اصل بدهی: ${_nf(d.amountOriginal)} ؋', 'اصلي پور: ${_nf(d.amountOriginal)} ؋'))),
+                  title: Row(
+                    children: [
+                      Text(_tr('Remaining: ', 'باقیمانده: ', 'پاتې: ')),
+                      CurrencyDisplay(amount: d.amountRemaining),
+                    ],
+                  ),
+                  subtitle: Row(
+                    children: [
+                      Text(_tr('Original: ', 'اصل بدهی: ', 'اصلي پور: ')),
+                      CurrencyDisplay(amount: d.amountOriginal),
+                    ],
+                  ),
                   onTap: () => Navigator.pop(context, d),
                 ),
               ),

@@ -8,6 +8,8 @@ import '../../../core/database/app_database.dart';
 import '../../../core/database/database_provider.dart';
 import '../../../core/sync/sync_service.dart';
 import '../../../core/utils/number_system_formatter.dart';
+import '../../../shared/widgets/currency_display.dart';
+import '../../../core/settings/currency_preference_provider.dart';
 
 class RecordPaymentScreen extends ConsumerStatefulWidget {
   const RecordPaymentScreen({super.key});
@@ -60,7 +62,16 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
                 children: [
                   Text(customerName, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
-                  Text(_na('${_tr('Total debt', 'کل بدهی', 'ټول پور')}: ${_nf(amountRemaining)} ${_tr('AFN', '؋', '؋')}')),
+                  Row(
+                    children: [
+                      Text(_tr('Total debt', 'کل بدهی', 'ټول پور'), style: Theme.of(context).textTheme.bodyMedium),
+                      Text(': ', style: Theme.of(context).textTheme.bodyMedium),
+                      CurrencyDisplay(
+                        amount: amountRemaining,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -76,14 +87,14 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
                 Expanded(
                   child: FilledButton.tonal(
                     onPressed: () => _amountController.text = _rawInt(20000),
-                    child: Text('${_nf(20000)} ؋'),
+                    child: CurrencyDisplay(amount: 20000),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: FilledButton.tonal(
                     onPressed: () => _amountController.text = _rawInt(50000),
-                    child: Text('${_nf(50000)} ؋'),
+                    child: CurrencyDisplay(amount: 50000),
                   ),
                 ),
               ],
@@ -94,7 +105,13 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () => _amountController.text = _rawInt(amountRemaining),
-                    child: Text(_tr('Full Amount: ${_nf(amountRemaining)} ؋', 'کل مبلغ: ${_nf(amountRemaining)} ؋', 'بشپړه اندازه: ${_nf(amountRemaining)} ؋')),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(_tr('Full Amount: ', 'کل مبلغ: ', 'بشپړه اندازه: ')),
+                        CurrencyDisplay(amount: amountRemaining),
+                      ],
+                    ),
                   ),
                 ),
               ],

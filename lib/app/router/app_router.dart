@@ -117,6 +117,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
+        path: '/settings/help-faq',
+        builder: (context, state) => const LegacyFrontendHost(
+          initialRoute: '/settings/help-faq',
+        ),
+      ),
+      GoRoute(
         path: '/subscription',
         builder: (context, state) => const LegacyFrontendHost(
           initialRoute: '/subscription',

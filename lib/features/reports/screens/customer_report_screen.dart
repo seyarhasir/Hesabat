@@ -6,8 +6,11 @@ import '../../../core/database/database_provider.dart';
 import '../../../core/utils/number_system_formatter.dart';
 import '../../../core/utils/pdf_generator.dart';
 import '../../../core/utils/date_formatter.dart';
-import '../../../core/settings/calendar_system_provider.dart';
 import '../providers/reports_provider.dart';
+import '../../../shared/widgets/currency_display.dart';
+import '../../../core/settings/calendar_system_provider.dart';
+import '../../../core/settings/currency_preference_provider.dart';
+import '../../../core/utils/currency_formatter.dart';
 
 class CustomerReportScreen extends ConsumerStatefulWidget {
   const CustomerReportScreen({super.key});
@@ -172,7 +175,10 @@ class _CustomerReportScreenState extends ConsumerState<CustomerReportScreen> {
                         child: ListTile(
                           leading: const Icon(Icons.person_outline_rounded),
                           title: Text(e.key),
-                          trailing: Text('${_nf(e.value)} ${_tr('AFN', '؋', '؋')}'),
+                          trailing: CurrencyDisplay(
+                            amount: e.value,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
                         ),
                       ),
                     ),
@@ -192,7 +198,10 @@ class _CustomerReportScreenState extends ConsumerState<CustomerReportScreen> {
                             '${_nf(r.overdueDays)} روز معوق',
                             '${_nf(r.overdueDays)} ورځې ځنډ',
                           )),
-                          trailing: Text('${_nf(r.amount)} ${_tr('AFN', '؋', '؋')}'),
+                          trailing: CurrencyDisplay(
+                            amount: r.amount,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
                         ),
                       ),
                     ),
@@ -208,7 +217,10 @@ class _CustomerReportScreenState extends ConsumerState<CustomerReportScreen> {
                           leading: const Icon(Icons.receipt_long_rounded),
                           title: Text(h.customerName),
                           subtitle: Text(_na(DateFormatter.formatDate(h.date, calendar: calendarType, locale: _lang))),
-                          trailing: Text('${_nf(h.amount)} ${_tr('AFN', '؋', '؋')}'),
+                          trailing: CurrencyDisplay(
+                            amount: h.amount,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
                         ),
                       ),
                     ),
@@ -231,9 +243,14 @@ class _CustomerReportScreenState extends ConsumerState<CustomerReportScreen> {
           returningCustomers: _returningCustomers,
           topCustomers: _topCustomers,
           atRiskCustomers: _atRisk.map((e) => MapEntry(e.customerName, e.amount)).toList(),
-          purchaseHistory: _history
-              .map((e) => '${DateFormatter.formatDate(e.date, calendar: calendarType, locale: _lang)} — ${e.customerName} — ${e.amount.toStringAsFixed(0)} AFN')
-              .toList(),
+          purchaseHistory: () {
+            final currency = ref.read(currencyPreferenceProvider);
+            return _history.map((e) {
+              final dateStr = DateFormatter.formatDate(e.date, calendar: calendarType, locale: _lang);
+              final amountStr = CurrencyFormatter.format(e.amount, currency);
+              return '$dateStr — ${e.customerName} — $amountStr';
+            }).toList();
+          }(),
           calendar: calendarType,
           locale: _lang,
         );

@@ -3,6 +3,7 @@ import '../../core/utils/number_system_formatter.dart';
 import '../../core/utils/date_formatter.dart';
 import '../theme/app_layout.dart';
 import '../theme/app_colors.dart';
+import 'currency_display.dart';
 
 class TransactionCard extends StatelessWidget {
   final double amount;
@@ -46,10 +47,6 @@ class TransactionCard extends StatelessWidget {
     final methodLabel = _getMethodLabel(paymentMethod, t);
     final relativeDate = DateFormatter.formatRelative(createdAt, locale: locale, calendar: calendarType);
     final fullDate = DateFormatter.formatDisplayDateTime(createdAt, locale: locale, calendar: calendarType);
-
-    final amountText = isVisible 
-      ? '${NumberSystemFormatter.formatFixed(amount)} $currencySymbol'
-      : '• • • •';
 
     return InkWell(
       onTap: onTap,
@@ -97,13 +94,22 @@ class TransactionCard extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        amountText,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: cs.onSurface,
+                      if (isVisible)
+                        CurrencyDisplay(
+                          amount: amount,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: cs.onSurface,
+                          ),
+                        )
+                      else
+                        Text(
+                          '• • • •',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: cs.onSurface,
+                          ),
                         ),
-                      ),
                       Text(
                         relativeDate,
                         style: theme.textTheme.labelSmall?.copyWith(

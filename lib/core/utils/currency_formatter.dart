@@ -35,8 +35,8 @@ class CurrencyFormatter {
         return '؋';
       case 'USD':
         return '\$';
-      case 'PKR':
-        return '₨';
+      case 'IR':
+        return 'IR';
       default:
         return currency;
     }

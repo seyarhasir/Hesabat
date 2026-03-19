@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/utils/number_system_formatter.dart';
+import '../../core/settings/currency_preference_provider.dart';
 
-class CurrencyDisplay extends StatelessWidget {
+class CurrencyDisplay extends ConsumerWidget {
   final double amount;
-  final String currency;
+  final String currency; // Original currency (usually AFN)
   final bool showOriginal;
   final double? originalAmount;
   final String? originalCurrency;
@@ -22,12 +23,18 @@ class CurrencyDisplay extends StatelessWidget {
     this.isRTL = true,
   });
 
-  String get _currencySymbol {
-    switch (currency) {
-      case 'AFN': return '\u060B';
-      case 'USD': return '\$';
-      case 'PKR': return '\u20A8';
-      default: return currency;
+  String _getCurrencySymbol(String code) {
+    switch (code.toUpperCase()) {
+      case 'AFN':
+        return '\u060B';
+      case 'USD':
+        return '\$';
+      case 'PKR':
+        return '\u20A8';
+      case 'IRR':
+        return 'IR'; // User preferred 'IR' label for Rial
+      default:
+        return code;
     }
   }
 
@@ -40,24 +47,47 @@ class CurrencyDisplay extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final defaultStyle = style ?? theme.textTheme.titleMedium!.copyWith(
-      fontWeight: FontWeight.w600,
-    );
+    final targetCurrency = ref.watch(currencyPreferenceProvider);
+    final snapshotAsync = ref.watch(exchangeRateSnapshotProvider);
+
+    final defaultStyle = style ??
+        theme.textTheme.titleMedium!.copyWith(
+          fontWeight: FontWeight.w600,
+        );
+
+    // Default to provided amount if no conversion needed or available
+    double displayAmount = amount;
+    String displayCurrency = currency;
+
+    snapshotAsync.whenData((snapshot) {
+      if (currency != targetCurrency) {
+        final fromRate = snapshot.ratesFromAfn[currency] ?? (currency == 'AFN' ? 1.0 : null);
+        final toRate = snapshot.ratesFromAfn[targetCurrency] ?? (targetCurrency == 'AFN' ? 1.0 : null);
+
+        if (fromRate != null && toRate != null && fromRate > 0) {
+          displayAmount = amount * (toRate / fromRate);
+          displayCurrency = targetCurrency;
+        }
+      }
+    });
 
     final children = <Widget>[
       Text(
-        '${_formatAmount(amount)} $_currencySymbol',
+        '${_formatAmount(displayAmount)} ${_getCurrencySymbol(displayCurrency)}',
         style: defaultStyle,
         textDirection: TextDirection.ltr,
       ),
     ];
 
-    if (showOriginal && originalAmount != null && originalCurrency != null) {
+    if (showOriginal && (originalAmount != null || (displayCurrency != currency))) {
+      final actualOriginalAmount = originalAmount ?? amount;
+      final actualOriginalCurrency = originalCurrency ?? currency;
+
       children.add(
         Text(
-          ' (${_formatAmount(originalAmount!)} $originalCurrency)',
+          ' (${_formatAmount(actualOriginalAmount)} ${actualOriginalCurrency == 'AFN' ? '\u060B' : actualOriginalCurrency})',
           style: defaultStyle.copyWith(
             color: theme.colorScheme.onSurface.withOpacity(0.5),
             fontSize: (defaultStyle.fontSize ?? 16) * 0.85,

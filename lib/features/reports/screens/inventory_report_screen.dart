@@ -8,6 +8,7 @@ import '../../../core/utils/date_formatter.dart';
 import '../../../core/utils/number_system_formatter.dart';
 import '../../../core/utils/pdf_generator.dart';
 import '../providers/reports_provider.dart';
+import '../../../shared/widgets/currency_display.dart';
 
 class InventoryReportScreen extends ConsumerStatefulWidget {
   const InventoryReportScreen({super.key});
@@ -123,7 +124,10 @@ class _InventoryReportScreenState extends ConsumerState<InventoryReportScreen> {
                     child: ListTile(
                       leading: const Icon(Icons.payments_rounded),
                       title: Text(_tr('Inventory value', 'ارزش موجودی', 'د زېرمې ارزښت')),
-                      trailing: Text('${_nf(_inventoryValue)} ${_tr('AFN', '؋', '؋')}'),
+                      trailing: CurrencyDisplay(
+                        amount: _inventoryValue,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                   Card(

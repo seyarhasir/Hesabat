@@ -10,6 +10,7 @@ import '../../../core/settings/shop_profile_service.dart';
 import '../../../core/utils/receipt_service.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_layout.dart';
+import '../../../shared/widgets/currency_display.dart';
 
 class SaleDetailsScreen extends ConsumerWidget {
   final Sale sale;
@@ -97,8 +98,8 @@ class SaleDetailsScreen extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(height: AppSpacing.m),
-                      Text(
-                        '${NumberSystemFormatter.formatFixed(sale.totalAfn)} ؋',
+                      CurrencyDisplay(
+                        amount: sale.totalAfn,
                         style: theme.textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: cs.onSurface,
@@ -161,7 +162,13 @@ class SaleDetailsScreen extends ConsumerWidget {
                       ),
                       _summaryRow(
                         t('Total Amount', 'مجموع کل', 'ټولیز مبلغ'),
-                        '${NumberSystemFormatter.formatFixed(sale.totalAfn)} ؋',
+                        CurrencyDisplay(
+                          amount: sale.totalAfn,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: cs.primary,
+                          ),
+                        ),
                         theme,
                         cs,
                         isBold: true,
@@ -230,16 +237,24 @@ class SaleDetailsScreen extends ConsumerWidget {
                   item.productNameSnapshot,
                   style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                 ),
-                Text(
-                  '${NumberSystemFormatter.formatFixed(item.quantity)} × ${NumberSystemFormatter.formatFixed(item.unitPrice)} ؋',
-                  style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurface.withValues(alpha: 0.5)),
+                Row(
+                  children: [
+                    Text(
+                      '${NumberSystemFormatter.formatFixed(item.quantity)} × ',
+                      style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurface.withValues(alpha: 0.5)),
+                    ),
+                    CurrencyDisplay(
+                      amount: item.unitPrice,
+                      style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurface.withValues(alpha: 0.5)),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
           const SizedBox(width: AppSpacing.s),
-          Text(
-            '${NumberSystemFormatter.formatFixed(item.subtotal)} ؋',
+          CurrencyDisplay(
+            amount: item.subtotal,
             style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
         ],
@@ -247,7 +262,7 @@ class SaleDetailsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _summaryRow(String label, String value, ThemeData theme, ColorScheme cs, {bool isBold = false}) {
+  Widget _summaryRow(String label, Widget valueWidget, ThemeData theme, ColorScheme cs, {bool isBold = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -257,13 +272,7 @@ class SaleDetailsScreen extends ConsumerWidget {
             fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
           ),
         ),
-        Text(
-          value,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: isBold ? cs.primary : null,
-          ),
-        ),
+        valueWidget,
       ],
     );
   }

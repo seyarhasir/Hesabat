@@ -6,6 +6,7 @@ import '../actions/product_write_actions.dart';
 import 'forms/product_form_dialog.dart';
 import '../read_models/read_model_providers.dart';
 import '../router/app_routes.dart';
+import '../../../shared/widgets/currency_display.dart';
 import '../../domain/usecases/sync_usecase_providers.dart';
 
 class ProductsScreen extends ConsumerWidget {
@@ -77,7 +78,7 @@ class ProductsScreen extends ConsumerWidget {
               return ListTile(
                 title: Text(p.name),
                 subtitle: Text('Stock: ${p.stockQuantity}'),
-                trailing: Text('AFN ${p.price.toStringAsFixed(2)}'),
+                trailing: CurrencyDisplay(amount: p.price),
                 onTap: () async {
                   final form = await showProductFormDialog(
                     context,

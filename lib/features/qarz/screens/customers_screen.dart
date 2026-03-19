@@ -5,6 +5,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/database/database_provider.dart';
 import '../../../core/utils/number_system_formatter.dart';
 import '../../../shared/theme/app_colors.dart';
+import '../../../shared/widgets/currency_display.dart';
 
 class CustomersScreen extends ConsumerStatefulWidget {
   const CustomersScreen({super.key});
@@ -108,8 +109,8 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                               title: Text(customer.name),
                               subtitle: customer.phone == null || customer.phone!.isEmpty ? null : Text(customer.phone!),
                               trailing: hasDebt
-                                  ? Text(
-                                      _na('${_nf(customer.totalOwed)} ${_tr('AFN', '؋', '؋')}'),
+                                  ? CurrencyDisplay(
+                                      amount: customer.totalOwed,
                                       style: theme.textTheme.titleSmall?.copyWith(color: AppColors.warning, fontWeight: FontWeight.bold),
                                     )
                                   : Text(

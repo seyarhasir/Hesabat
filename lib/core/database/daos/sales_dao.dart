@@ -67,6 +67,15 @@ class SalesDao extends DatabaseAccessor<AppDatabase> with _$SalesDaoMixin {
     });
   }
 
+  Future<List<SaleItem>> getSaleItemsByShopId(String shopId) async {
+    final query = select(saleItems).join([
+      innerJoin(sales, sales.id.equalsExp(saleItems.saleId)),
+    ])..where(sales.shopId.equals(shopId));
+    
+    final rows = await query.get();
+    return rows.map((row) => row.readTable(saleItems)).toList();
+  }
+
   // Complete sale transaction
   Future<String> recordCompleteSale(
     SalesCompanion sale,

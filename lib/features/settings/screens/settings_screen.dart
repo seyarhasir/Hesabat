@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/auth/auth_state_notifier.dart';
 import '../../../core/settings/app_locale_provider.dart';
@@ -10,10 +11,12 @@ import '../../../core/settings/calendar_system_provider.dart';
 import '../../../core/settings/shop_profile_service.dart';
 import '../../../core/utils/exchange_rate_service.dart';
 import '../../../core/utils/number_system_formatter.dart';
+import '../../../core/settings/currency_preference_provider.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_layout.dart';
 import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/currency_display.dart';
 
 /// Settings Screen - App configuration and user preferences
 class SettingsScreen extends ConsumerWidget {
@@ -169,10 +172,10 @@ class SettingsScreen extends ConsumerWidget {
               return _buildSettingTile(
                 context,
                 title: _tr(context, 'Currency', 'پول', 'اسعار'),
-                subtitle: snapshot.data ?? _tr(context, 'AFN (Afghan Afghani)', 'افغانی (AFN)', 'افغانۍ (AFN)'),
+                subtitle: snapshot.data ?? _tr(context, 'AFN (rates unavailable)', 'افغانی (نرخ ناموجود)', 'افغانۍ (نرخ نشته)'),
                 leadingIcon: Icons.payments_outlined,
                 leadingBgColor: Colors.greenAccent[700],
-                onTap: () => _showCurrencySettings(context),
+                onTap: () => _showCurrencySettings(context, ref),
               );
             },
           ),
@@ -186,6 +189,18 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.l),
 
+          // Data & Privacy Section
+          _buildGroupHeader(context, _tr(context, 'Data & Privacy', 'داده‌ها و حریم خصوصی', 'معلومات او محرمیت'), Icons.security_rounded),
+          _buildSettingTile(
+            context,
+            title: _tr(context, 'Data Export', 'استخراج داده‌ها', 'د معلوماتو استخراج'),
+            subtitle: _tr(context, 'Backup as CSV or PDF', 'پشتیبان‌گیری به صورت CSV یا PDF', 'CSV یا PDF په بڼه بک اپ'),
+            leadingIcon: Icons.ios_share_rounded,
+            leadingBgColor: Colors.teal,
+            onTap: () => Navigator.pushNamed(context, '/settings/export'),
+          ),
+          const SizedBox(height: AppSpacing.l),
+
           // Support Section
           _buildGroupHeader(context, _tr(context, 'Support', 'پشتیبانی', 'ملاتړ'), Icons.help_outline_rounded),
           _buildSettingTile(
@@ -193,7 +208,7 @@ class SettingsScreen extends ConsumerWidget {
             title: _tr(context, 'Help & FAQ', 'راهنما و سوالات', 'مرسته او پوښتنې'),
             leadingIcon: Icons.quiz_outlined,
             leadingBgColor: Colors.amber[700],
-            onTap: () => _showHelp(context),
+            onTap: () => Navigator.pushNamed(context, '/settings/help-faq'),
           ),
           _buildSettingTile(
             context,
@@ -230,9 +245,15 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Future<String> _exchangeRateSubtitle(BuildContext context, WidgetRef ref) async {
+    final prefCurrency = ref.watch(currencyPreferenceProvider);
+
     final updatedAt = await ExchangeRateService.instance.getLastUpdatedAt();
     if (updatedAt == null) {
-      return _tr(context, 'AFN (rates unavailable)', 'افغانی (نرخ ناموجود)', 'افغانۍ (نرخ نشته)');
+      // Trigger a silent background fetch if rates are missing
+      ExchangeRateService.instance.getLatestSnapshot(preferFresh: true).then((_) {
+        // Future builder will naturally show old data until next rebuild.
+      });
+      return _tr(context, '$prefCurrency (rates unavailable)', '$prefCurrency (نرخ ناموجود)', '$prefCurrency (نرخ نشته)');
     }
 
     final calendarSystem = ref.read(appCalendarSystemProvider);
@@ -242,9 +263,9 @@ class SettingsScreen extends ConsumerWidget {
     );
     return _tr(
       context,
-      'AFN • Updated: $formatted',
-      'AFN • بروزرسانی: $formatted',
-      'AFN • تازه شوی: $formatted',
+      '$prefCurrency • Updated: $formatted',
+      '$prefCurrency • بروزرسانی: $formatted',
+      '$prefCurrency • تازه شوی: $formatted',
     );
   }
 
@@ -415,12 +436,23 @@ class SettingsScreen extends ConsumerWidget {
               color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
               borderRadius: AppRadius.large,
             ),
-            child: Text(
-              _tr(context, '400 AFN / month', '۴۰۰ ؋ / ماه', '۴۰۰ ؋ / میاشت'),
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CurrencyDisplay(
+                  amount: 400,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                Text(
+                  ' / ${_tr(context, 'month', 'ماه', 'میاشت')}',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: AppSpacing.xl),
@@ -493,20 +525,51 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showCurrencySettings(BuildContext context) {
+  void _showCurrencySettings(BuildContext context, WidgetRef ref) {
     _showAppBottomSheet(
       context,
       title: _tr(context, 'Currency', 'پول', 'اسعار'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildSelectionTile(context, _tr(context, 'AFN - Afghan Afghani', 'AFN - افغانی', 'AFN - افغانۍ'), isSelected: true, onTap: () => Navigator.pop(context)),
-          const SizedBox(height: 8),
-          _buildSelectionTile(context, _tr(context, 'USD - US Dollar', 'USD - دالر', 'USD - ډالر'), onTap: () => Navigator.pop(context)),
-          const SizedBox(height: 8),
-          _buildSelectionTile(context, _tr(context, 'PKR - Pakistani Rupee', 'PKR - روپیه', 'PKR - کلدارې'), onTap: () => Navigator.pop(context)),
-        ],
+      content: Consumer(
+        builder: (context, ref, child) {
+          final currentCurrency = ref.watch(currencyPreferenceProvider);
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildCurrencySelectionTile(context, ref, 'AFN', _tr(context, 'AFN - Afghan Afghani', 'AFN - افغانی', 'AFN - افغانۍ'), currentCurrency == 'AFN'),
+              const SizedBox(height: 8),
+              _buildCurrencySelectionTile(context, ref, 'USD', _tr(context, 'USD - US Dollar', 'USD - دالر', 'USD - ډالر'), currentCurrency == 'USD'),
+              const SizedBox(height: 8),
+              _buildCurrencySelectionTile(context, ref, 'PKR', _tr(context, 'PKR - Pakistani Rupee', 'PKR - روپیه', 'PKR - کلدارې'), currentCurrency == 'PKR'),
+              const SizedBox(height: 8),
+              _buildCurrencySelectionTile(context, ref, 'IRR', _tr(context, 'IR - Iranian Rial', 'IR - ریال ایران', 'IR - ایراني ریال'), currentCurrency == 'IRR'),
+            ],
+          );
+        },
       ),
+    );
+  }
+
+  Widget _buildCurrencySelectionTile(BuildContext context, WidgetRef ref, String code, String label, bool isSelected) {
+    return _buildSelectionTile(
+      context,
+      label,
+      isSelected: isSelected,
+      onTap: () async {
+        await ref.read(currencyPreferenceProvider.notifier).setCurrency(code);
+        
+        // Try to sync with cloud if possible
+        try {
+          final supabase = Supabase.instance.client;
+          if (supabase.auth.currentUser != null) {
+            final profile = await ShopProfileService.load();
+            if (profile != null) {
+              await ShopProfileService.saveToCloud(supabase, profile);
+            }
+          }
+        } catch (_) {}
+        
+        if (context.mounted) Navigator.pop(context);
+      },
     );
   }
 
@@ -616,19 +679,6 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showHelp(BuildContext context) {
-    _showAppBottomSheet(
-      context,
-      title: _tr(context, 'Help & FAQ', 'راهنما و سوالات', 'مرسته او پوښتنې'),
-      content: Column(
-        children: [
-          _buildFAQItem(context, _tr(context, 'How to record a sale?', 'چطور فروش ثبت کنم؟', 'پلور څنګه ثبت کړم؟'), _tr(context, 'Go to Sales, search for a product, and tap checkout.', 'به بخش فروش بروید، محصول جستجو کنید و ثبت را بزنید.', 'د پلور برخې ته لاړ شئ، محصول ولټوئ او ثبت یې کړئ.')),
-          _buildFAQItem(context, _tr(context, 'How to track debts?', 'چطور قرض‌ها را مدیریت کنم؟', 'قرضونه څنګه تعقیب کړم؟'), _tr(context, 'Check the Qarz section to manage customer balances.', 'به بخش قرض بروید و بدهی مشتریان را مدیریت کنید.', 'د قرض برخې ته لاړ شئ او د پېرودونکو پورونه مدیریت کړئ.')),
-          _buildFAQItem(context, _tr(context, 'Is offline use supported?', 'آیا آفلاین کار می‌کند؟', 'ایا اپ افلاین کار کوي؟'), _tr(context, 'Yes, Hesabat works perfectly without internet.', 'بله، حسابات بدون اینترنت هم کار می‌کند.', 'هو، حسابات له انټرنټ پرته هم ښه کار کوي.')),
-        ],
-      ),
-    );
-  }
 
   void _contactSupport(BuildContext context) {
     _showAppBottomSheet(
@@ -947,19 +997,6 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildFAQItem(BuildContext context, String q, String a) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.m),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(q, style: const TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 2),
-          Text(a, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey)),
-        ],
-      ),
-    );
-  }
 
   void _launchWhatsApp(String phone, String message) async {
     final encoded = Uri.encodeComponent(message);

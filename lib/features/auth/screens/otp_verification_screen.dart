@@ -5,6 +5,7 @@ import '../../../core/auth/auth_provider.dart';
 import '../../../core/database/database_provider.dart';
 import '../../../core/settings/shop_profile_service.dart';
 import '../../../shared/theme/app_layout.dart';
+import '../../../shared/widgets/app_button.dart';
 
 class OtpVerificationScreen extends ConsumerStatefulWidget {
   final String phone;

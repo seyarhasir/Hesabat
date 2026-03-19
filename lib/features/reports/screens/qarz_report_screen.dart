@@ -9,6 +9,7 @@ import '../../../core/utils/pdf_generator.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/settings/calendar_system_provider.dart';
 import '../providers/reports_provider.dart';
+import '../../../shared/widgets/currency_display.dart';
 
 class QarzReportScreen extends ConsumerStatefulWidget {
   const QarzReportScreen({super.key});
@@ -176,7 +177,10 @@ class _QarzReportScreenState extends ConsumerState<QarzReportScreen> {
                         children: [
                           Text(_tr('Total owed to you', 'کل بدهی به شما', 'ټول پور چې تاسې ته پاتې دی'), style: const TextStyle(fontWeight: FontWeight.bold)),
                           const SizedBox(height: 8),
-                          Text('${_nf(_totalOutstanding)} ${_tr('AFN', '؋', '؋')}', style: Theme.of(context).textTheme.headlineSmall),
+                          CurrencyDisplay(
+                            amount: _totalOutstanding,
+                            style: Theme.of(context).textTheme.headlineSmall,
+                          ),
                           const SizedBox(height: 8),
                           Text(_tr('Open debts: ${_nf(_openCount)}', 'تعداد بدهی باز: ${_nf(_openCount)}', 'خلاص پورونه: ${_nf(_openCount)}')),
                           Text(_tr('Overdue 30+ days: ${_nf(_overdueCount)}', 'معوق ۳۰+ روز: ${_nf(_overdueCount)}', 'تر ۳۰+ ورځو ځنډېدلي: ${_nf(_overdueCount)}')),
@@ -194,7 +198,7 @@ class _QarzReportScreenState extends ConsumerState<QarzReportScreen> {
                           child: ListTile(
                             leading: const Icon(Icons.person_outline_rounded),
                             title: Text(row.customerName),
-                            trailing: Text('${_nf(row.amount)} ${_tr('AFN', '؋', '؋')}'),
+                            trailing: CurrencyDisplay(amount: row.amount),
                           ),
                         )),
                   const SizedBox(height: 12),
@@ -216,7 +220,7 @@ class _QarzReportScreenState extends ConsumerState<QarzReportScreen> {
                               '${_nf(row.overdueItems)} بدهی معوق • حداکثر ${_nf(row.maxOverdueDays)} روز',
                               '${_nf(row.overdueItems)} ځنډېدلي پورونه • تر ټولو زیات ${_nf(row.maxOverdueDays)} ورځې',
                             )),
-                            trailing: Text('${_nf(row.totalAmount)} ${_tr('AFN', '؋', '؋')}'),
+                            trailing: CurrencyDisplay(amount: row.totalAmount),
                           ),
                         )),
                   const SizedBox(height: 12),

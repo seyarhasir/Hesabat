@@ -9,10 +9,13 @@ import '../providers/pending_scanned_barcode_result_provider.dart';
 import '../providers/sale_screen_mode_provider.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_layout.dart';
+import '../../../shared/widgets/currency_display.dart';
+import '../../../shared/widgets/currency_display.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/product_card.dart';
 import '../../../shared/widgets/transaction_card.dart';
+import '../../../shared/widgets/currency_display.dart';
 
 /// Sale Recording Screen
 class SaleScreen extends ConsumerStatefulWidget {
@@ -213,13 +216,23 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
                             _tr('Total Amount', 'جمع کل', 'ټولیز مبلغ'),
                             style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurface.withOpacity(0.6)),
                           ),
-                          Text(
-                            '${_nf(_calculateTotal())} ${_tr('AFN', '؋', '؋')}',
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: cs.primary,
+                          if (_calculateTotal() > 0)
+                            CurrencyDisplay(
+                              amount: _calculateTotal(),
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: cs.primary,
+                              ),
+                            )
+                          else
+                            CurrencyDisplay(
+                              amount: 0,
+                              style: TextStyle(
+                                fontSize: 48,
+                                fontWeight: FontWeight.bold,
+                                color: cs.onSurface,
+                              ),
                             ),
-                          ),
                         ],
                       ),
                     ),
@@ -497,9 +510,17 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
                       item.productName,
                       style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                     ),
-                    Text(
-                      _na(_tr('${_nf(item.price)} AFN each', '${_nf(item.price)} ؋ فی واحد', '${_nf(item.price)} ؋ هر یو')),
-                      style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurface.withOpacity(0.5)),
+                    Row(
+                      children: [
+                        CurrencyDisplay(
+                          amount: item.price,
+                          style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurface.withOpacity(0.5)),
+                        ),
+                        Text(
+                          _tr(' each', ' فی واحد', ' هر یو'),
+                          style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurface.withOpacity(0.5)),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -514,14 +535,19 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                _na(_tr(
-                  'Subtotal: ${_nf(item.quantity * item.price)} AFN',
-                  'جمع جزء: ${_nf(item.quantity * item.price)} ؋',
-                  'فرعي جمع: ${_nf(item.quantity * item.price)} ؋',
-                )),
-                style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-              ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _tr('Subtotal: ', 'جمع جزء: ', 'فرعي جمع: '),
+                      style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                    CurrencyDisplay(
+                      amount: item.quantity * item.price,
+                      style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
               Container(
                 decoration: BoxDecoration(
                   color: cs.onSurface.withOpacity(0.05),

@@ -7,6 +7,7 @@ import '../../../core/database/database_provider.dart';
 import '../../../core/utils/number_system_formatter.dart';
 import '../../../core/utils/pdf_generator.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../../shared/widgets/currency_display.dart';
 import '../../../core/settings/calendar_system_provider.dart';
 import '../providers/reports_provider.dart';
 
@@ -189,23 +190,32 @@ class _ProfitReportScreenState extends ConsumerState<ProfitReportScreen> {
                     child: ListTile(
                       leading: const Icon(Icons.trending_up_rounded),
                       title: Text(_tr('Total revenue', 'درآمد کل', 'ټول عاید')),
-                      trailing: Text('${_nf(_revenue)} ${_tr('AFN', '؋', '؋')}'),
+                      trailing: CurrencyDisplay(
+                        amount: _revenue,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                   Card(
                     child: ListTile(
                       leading: const Icon(Icons.shopping_bag_outlined),
                       title: Text(_tr('Total cost', 'بهای تمام‌شده', 'ټول لګښت')),
-                      trailing: Text('${_nf(_cost)} ${_tr('AFN', '؋', '؋')}'),
+                      trailing: CurrencyDisplay(
+                        amount: _cost,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                   Card(
                     child: ListTile(
                       leading: const Icon(Icons.account_balance_wallet_rounded),
                       title: Text(_tr('Estimated profit', 'سود تخمینی', 'اټکلي ګټه')),
-                      trailing: Text(
-                        '${_nf(profit)} ${_tr('AFN', '؋', '؋')}',
-                        style: TextStyle(color: profit >= 0 ? Colors.green : Theme.of(context).colorScheme.error),
+                      trailing: CurrencyDisplay(
+                        amount: profit,
+                        style: TextStyle(
+                          color: profit >= 0 ? Colors.green : Theme.of(context).colorScheme.error,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),

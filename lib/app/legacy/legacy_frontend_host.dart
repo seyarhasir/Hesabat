@@ -26,6 +26,8 @@ import '../../features/sales/screens/sale_details_screen.dart' as sales_details;
 import '../../features/sales/screens/sale_screen.dart' as sales;
 import '../../features/settings/screens/settings_screen.dart' as app_settings;
 import '../../features/settings/screens/subscription_screen.dart' as subscription;
+import '../../features/settings/screens/data_export_screen.dart' as data_export;
+import '../../features/settings/screens/help_faq_screen.dart' as help_faq;
 import '../../features/sync/screens/conflict_resolution_screen.dart' as sync_conflicts;
 import '../screens/auth_screen.dart';
 
@@ -148,6 +150,12 @@ class LegacyFrontendHost extends StatelessWidget {
 
       case '/settings':
         page = const app_settings.SettingsScreen();
+        break;
+      case '/settings/export':
+        page = const data_export.DataExportScreen();
+        break;
+      case '/settings/help-faq':
+        page = const help_faq.HelpFaqScreen();
         break;
       case '/subscription':
         page = const subscription.SubscriptionScreen();

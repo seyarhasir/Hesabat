@@ -20,6 +20,7 @@ class _CurrencyPreferenceScreenState extends ConsumerState<CurrencyPreferenceScr
     {'code': 'AFN', 'name': 'Afghan Afghani', 'symbol': '\u060B', 'flag': '\u{1F1E6}\u{1F1EB}'},
     {'code': 'USD', 'name': 'US Dollar', 'symbol': '\$', 'flag': '\u{1F1FA}\u{1F1F8}'},
     {'code': 'PKR', 'name': 'Pakistani Rupee', 'symbol': '\u20A8', 'flag': '\u{1F1F5}\u{1F1F0}'},
+    {'code': 'IRR', 'name': 'Iranian Rial (IR)', 'symbol': '\ufdfc', 'flag': '\u{1F1EE}\u{1F1F7}'},
   ];
 
   @override

@@ -12,6 +12,9 @@ import '../../../core/utils/exchange_rate_service.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/utils/number_system_formatter.dart';
 import '../../../shared/widgets/currency_selector.dart';
+import '../../../shared/widgets/currency_display.dart';
+import '../../../shared/widgets/currency_display.dart';
+import '../../../core/settings/currency_preference_provider.dart';
 
 class SaleReviewScreen extends ConsumerStatefulWidget {
   const SaleReviewScreen({super.key});
@@ -113,8 +116,16 @@ class _SaleReviewScreenState extends ConsumerState<SaleReviewScreen> {
                         return Card(
                           child: ListTile(
                             title: Text(item['name']?.toString() ?? '-'),
-                            subtitle: Text('${_nf(quantity)} × ${_nf(price)} ${_tr('AFN', '؋', '؋')}'),
-                            trailing: Text('${_nf(subtotal)} ${_tr('AFN', '؋', '؋')}'),
+                            subtitle: Row(
+                              children: [
+                                Text('${_nf(quantity)} × '),
+                                CurrencyDisplay(amount: price),
+                              ],
+                            ),
+                            trailing: CurrencyDisplay(
+                              amount: subtotal,
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
                           ),
                         );
                       },
@@ -235,9 +246,20 @@ class _SaleReviewScreenState extends ConsumerState<SaleReviewScreen> {
                         padding: const EdgeInsets.only(top: 6),
                         child: Align(
                           alignment: Alignment.centerRight,
-                          child: Text(
-                            _na(_tr('AFN: ${_nf(totalAfn)} ؋', 'افغانی: ${_nf(totalAfn)} ؋', 'افغانۍ: ${_nf(totalAfn)} ؋')),
-                            style: Theme.of(context).textTheme.bodySmall,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Text(
+                                _tr('AFN: ', 'افغانی: ', 'افغانۍ: '),
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                              CurrencyDisplay(
+                                amount: totalAfn,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                              ),
+                            ],
                           ),
                         ),
                       ),

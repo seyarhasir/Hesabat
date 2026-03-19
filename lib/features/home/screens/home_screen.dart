@@ -13,6 +13,7 @@ import '../../../shared/widgets/sync_status_bar.dart';
 import '../../sales/providers/pending_scanned_barcode_result_provider.dart';
 import '../../sales/providers/sale_screen_mode_provider.dart';
 import '../../sales/screens/sale_screen.dart';
+import '../../../shared/widgets/currency_display.dart';
 import '../../../shared/widgets/transaction_card.dart';
 import '../../qarz/screens/qarz_dashboard_screen.dart';
 import '../../../core/settings/calendar_system_provider.dart';
@@ -255,33 +256,97 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   ),
                                   borderRadius: AppRadius.large,
                                 ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
+                                child: DefaultTextStyle(
+                                  style: const TextStyle(color: Colors.white),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            t('Today\'s Sales', 'فروش امروز', 'د نن پلور'),
+                                            style: theme.textTheme.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
+                                          ),
+                                          _homeChip(
+                                            Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              crossAxisAlignment: CrossAxisAlignment.center,
+                                              children: [
+                                                Text(
+                                                  '📦 ${t('Inventory', 'موجودی کل', 'ټولیزه ذخیره')}: ',
+                                                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                                                ),
+                                                if (isVisible)
+                                                  CurrencyDisplay(
+                                                    amount: inventoryValue,
+                                                    style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                                  )
+                                                else
+                                                  const Text('• • • •', style: TextStyle(color: Colors.white, fontSize: 10)),
+                                              ],
+                                            ),
+                                            small: true,
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: AppSpacing.s),
+                                      if (isVisible)
+                                        CurrencyDisplay(
+                                          amount: todaySales,
+                                          style: theme.textTheme.displaySmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                                        )
+                                      else
                                         Text(
-                                          t('Today\'s Sales', 'فروش امروز', 'د نن پلور'),
-                                          style: theme.textTheme.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
+                                          '• • • •',
+                                          style: theme.textTheme.displaySmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
                                         ),
-                                        _homeChip('📦 ${t('Inventory', 'موجودی کل', 'ټولیزه ذخیره')}: ${_v('${_nf(inventoryValue)} ؋')}', small: true),
-                                      ],
-                                    ),
-                                    const SizedBox(height: AppSpacing.s),
-                                    Text(
-                                      _v('${_nf(todaySales)} ؋'),
-                                      style: theme.textTheme.displaySmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
-                                    ),
-                                    const SizedBox(height: AppSpacing.s),
-                                    Wrap(
-                                      spacing: AppSpacing.s,
-                                      children: [
-                                        _homeChip('💵 ${t('Cash', 'نقد', 'نغد')} ${_v(_nf(todayCash))}'),
-                                        _homeChip('🤝 ${t('Qarz', 'قرض', 'قرض')} ${_v(_nf(todayCredit))}'),
-                                      ],
-                                    ),
-                                  ],
+                                      const SizedBox(height: AppSpacing.s),
+                                      Wrap(
+                                        spacing: AppSpacing.s,
+                                        children: [
+                                          _homeChip(
+                                            Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              crossAxisAlignment: CrossAxisAlignment.center,
+                                              children: [
+                                                Text(
+                                                  '💵 ${t('Cash', 'نقد', 'نغد')} ',
+                                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                                ),
+                                                if (isVisible)
+                                                  CurrencyDisplay(
+                                                    amount: todayCash,
+                                                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                                  )
+                                                else
+                                                  const Text('• • • •', style: TextStyle(color: Colors.white, fontSize: 12)),
+                                              ],
+                                            ),
+                                          ),
+                                          _homeChip(
+                                            Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              crossAxisAlignment: CrossAxisAlignment.center,
+                                              children: [
+                                                Text(
+                                                  '🤝 ${t('Qarz', 'قرض', 'قرض')} ',
+                                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                                ),
+                                                if (isVisible)
+                                                  CurrencyDisplay(
+                                                    amount: todayCredit,
+                                                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                                  )
+                                                else
+                                                  const Text('• • • •', style: TextStyle(color: Colors.white, fontSize: 12)),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                               const SizedBox(height: AppSpacing.m),
@@ -290,7 +355,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   Expanded(
                                     child: AppStatCard(
                                       title: t('💰 Qarz', '💰 قرض', '💰 قرض'),
-                                      value: _v('${_nf(totalQarz)} ؋'),
+                                      value: isVisible ? '' : '• • • •',
+                                      amount: isVisible ? totalQarz : null,
                                       subtitle: t('Total debt', 'کل بدهی', 'ټول پور'),
                                       color: AppColors.warning,
                                       onTap: () => setState(() => _currentTab = 2),
@@ -390,11 +456,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _homeChip(String text, {bool small = false}) {
+  Widget _homeChip(Widget content, {bool small = false}) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: small ? 8 : AppSpacing.s, vertical: small ? 4 : 6),
       decoration: BoxDecoration(color: Colors.white.withOpacity(0.16), borderRadius: BorderRadius.circular(20)),
-      child: Text(text, style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: small ? 10 : 12)),
+      child: content,
     );
   }
 

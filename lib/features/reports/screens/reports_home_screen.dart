@@ -6,6 +6,7 @@ import '../../../core/utils/number_system_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/settings/calendar_system_provider.dart';
 import '../providers/reports_provider.dart';
+import '../../../shared/widgets/currency_display.dart';
 
 class ReportsHomeScreen extends ConsumerStatefulWidget {
   const ReportsHomeScreen({super.key});
@@ -82,6 +83,8 @@ class _ReportsHomeScreenState extends ConsumerState<ReportsHomeScreen> {
         ? CalendarType.persian 
         : CalendarType.gregorian;
 
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(title: Text(_tr('Reports', 'گزارش‌ها', 'راپورونه'))),
       body: _loading
@@ -95,21 +98,44 @@ class _ReportsHomeScreenState extends ConsumerState<ReportsHomeScreen> {
                     margin: const EdgeInsets.all(16),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('${_tr('Sales', 'فروش', 'پلور')}: ${_nf(_todaySales)} ${_tr('AFN', '؋', '؋')}'),
-                          Text('${_tr('New qarz', 'قرض جدید', 'نوی قرض')}: ${_nf(_todayCredit)} ${_tr('AFN', '؋', '؋')}'),
-                          Text('${_tr('Collected qarz', 'قرض وصول شده', 'راټول شوی قرض')}: ${_nf(_todayCollected)} ${_tr('AFN', '؋', '؋')}'),
-                          const SizedBox(height: 8),
-                          Text(
-                            '${_tr('Estimated profit', 'سود تخمینی', 'اټکلي ګټه')}: ${_nf(_todayProfitEstimate)} ${_tr('AFN', '؋', '؋')}',
-                            style: TextStyle(
-                              color: _todayProfitEstimate >= 0 ? Colors.green : cs.error,
-                              fontWeight: FontWeight.w600,
+                      child: DefaultTextStyle(
+                        style: theme.textTheme.bodyMedium ?? const TextStyle(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text('${_tr('Sales', 'فروش', 'پلور')}: '),
+                                CurrencyDisplay(amount: _todaySales),
+                              ],
                             ),
-                          ),
-                        ],
+                            Row(
+                              children: [
+                                Text('${_tr('New qarz', 'قرض جدید', 'نوی قرض')}: '),
+                                CurrencyDisplay(amount: _todayCredit),
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                Text('${_tr('Collected qarz', 'قرض وصول شده', 'راټول شوی قرض')}: '),
+                                CurrencyDisplay(amount: _todayCollected),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            DefaultTextStyle(
+                              style: TextStyle(
+                                color: _todayProfitEstimate >= 0 ? Colors.green : cs.error,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              child: Row(
+                                children: [
+                                  Text('${_tr('Estimated profit', 'سود تخمینی', 'اټکلي ګټه')}: '),
+                                  CurrencyDisplay(amount: _todayProfitEstimate),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),

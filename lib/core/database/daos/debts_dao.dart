@@ -59,6 +59,9 @@ class DebtsDao extends DatabaseAccessor<AppDatabase> with _$DebtsDaoMixin {
         ..where((dp) => dp.createdAt.isBetweenValues(start, end)))
           .get();
 
+  Future<List<DebtPayment>> getDebtPaymentsByShopId(String shopId) =>
+      (select(debtPayments)..where((dp) => dp.shopId.equals(shopId))).get();
+
   Future<int> insertDebtPayment(DebtPaymentsCompanion payment) =>
       into(debtPayments).insert(payment);
 
