@@ -68,15 +68,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       backgroundColor: cs.surface,
       body: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              cs.primary.withOpacity(0.12),
-              cs.surface,
-              cs.secondary.withOpacity(0.04),
-            ],
-          ),
+          color: cs.surface,
         ),
         child: SafeArea(
           child: Column(
