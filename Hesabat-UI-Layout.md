@@ -942,7 +942,7 @@ Border           #E2E8F0   — dividers, card borders
 ├─────────────────────────────┤
 │                             │
 │  بازه زمانی:                │
-│  [امروز] [هفته] [ماه] [سفارشی]│  ← period filter tabs
+│[امروز] [هفته] [ماه] [سفارشی]│  ← period filter tabs
 │                             │
 │ ┌─────────────────────────┐ │
 │ │  [BAR CHART]            │ │  ← fl_chart bar chart
