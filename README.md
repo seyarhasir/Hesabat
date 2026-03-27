@@ -1,4 +1,4 @@
-# hesabat
+# hesabat - Smart Shop
 
 A new Flutter project.
 
