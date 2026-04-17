@@ -37,33 +37,48 @@ class DateFormatter {
   /// Format relative time (same for both calendars - based on time difference)
   static String formatRelative(DateTime date, {String locale = 'fa', CalendarType calendar = CalendarType.gregorian}) {
     final now = DateTime.now();
-    final difference = now.difference(date);
+    var difference = now.difference(date);
+    
+    // Handle future dates (or clock skew) by treating them as "Just now"
+    // This often happens due to timezone mismatches or clock drift.
+    if (difference.isNegative) {
+      if (difference.inHours.abs() < 24) {
+        if (locale == 'en') return 'Just now';
+        if (locale == 'ps') return 'همدا اوس';
+        return 'همین الان';
+      }
+      // If significantly in the future, just show the absolute date
+      return formatDate(date, calendar: calendar, locale: locale);
+    }
     
     if (difference.inDays == 0) {
       if (difference.inHours == 0) {
-        if (difference.inMinutes < 5) {
+        if (difference.inMinutes < 1) {
           if (locale == 'en') return 'Just now';
           if (locale == 'ps') return 'همدا اوس';
           return 'همین الان';
         }
-        if (locale == 'en') return '${difference.inMinutes} minutes ago';
-        if (locale == 'ps') return '${difference.inMinutes} دقیقې مخکې';
-        return '${difference.inMinutes} دقیقه پیش';
+        final mins = difference.inMinutes;
+        if (locale == 'en') return '$mins ${mins == 1 ? 'minute' : 'minutes'} ago';
+        if (locale == 'ps') return '$mins دقیقې مخکې';
+        return '$mins دقیقه پیش';
       }
-      if (locale == 'en') return '${difference.inHours} hours ago';
-      if (locale == 'ps') return '${difference.inHours} ساعته مخکې';
-      return '${difference.inHours} ساعت پیش';
+      final hrs = difference.inHours;
+      if (locale == 'en') return '$hrs ${hrs == 1 ? 'hour' : 'hours'} ago';
+      if (locale == 'ps') return '$hrs ساعته مخکې';
+      return '$hrs ساعت پیش';
     } else if (difference.inDays == 1) {
       if (locale == 'en') return 'Yesterday';
       if (locale == 'ps') return 'پرون';
       return 'دیروز';
     } else if (difference.inDays < 7) {
-      if (locale == 'en') return '${difference.inDays} days ago';
-      if (locale == 'ps') return '${difference.inDays} ورځې مخکې';
-      return '${difference.inDays} روز پیش';
+      final days = difference.inDays;
+      if (locale == 'en') return '$days ${days == 1 ? 'day' : 'days'} ago';
+      if (locale == 'ps') return '$days ورځې مخکې';
+      return '$days روز پیش';
     } else if (difference.inDays < 30) {
       final weeks = (difference.inDays / 7).floor();
-      if (locale == 'en') return '$weeks weeks ago';
+      if (locale == 'en') return '$weeks ${weeks == 1 ? 'week' : 'weeks'} ago';
       if (locale == 'ps') return '$weeks اونۍ مخکې';
       return '$weeks هفته پیش';
     } else {

@@ -660,17 +660,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
-  String _timeAgoText(DateTime time, String Function(String, String, String) t) {
-    final mins = DateTime.now().difference(time).inMinutes;
-    if (mins < 60) {
-      return t('${_nf(mins)} min ago', '${_nf(mins)} دقیقه پیش', '${_nf(mins)} دقیقې مخکې');
-    }
-    final hrs = (mins / 60).floor();
-    if (hrs < 24) {
-      return t('${_nf(hrs)} hr ago', '${_nf(hrs)} ساعت پیش', '${_nf(hrs)} ساعت مخکې');
-    }
-    final days = (hrs / 24).floor();
-    return t('${_nf(days)} day ago', '${_nf(days)} روز پیش', '${_nf(days)} ورځ مخکې');
+  String _timeAgoText(DateTime time, String lang, CalendarType calendar) {
+    return DateFormatter.formatRelative(time, locale: lang, calendar: calendar);
   }
 
   Widget _getPage(int index, SyncState syncState) {

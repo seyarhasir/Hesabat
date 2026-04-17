@@ -392,7 +392,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
     final shopId = ref.read(currentShopIdProvider);
     final syncEnabled = !(await GuestModeService.isGuestMode());
     final now = DateTime.now();
-    final nowIso = now.toIso8601String();
+    final nowIso = now.toUtc().toIso8601String();
     final productId = _isEditing ? widget.product!.id : const Uuid().v4();
     final nameDari = _nameDariController.text.trim();
     final nameEn = _nameEnController.text.trim().isEmpty ? null : _nameEnController.text.trim();

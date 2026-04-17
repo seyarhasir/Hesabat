@@ -79,7 +79,7 @@ class _StockTakeScreenState extends ConsumerState<StockTakeScreen> {
     final db = ref.read(databaseProvider);
     final shopId = ref.read(currentShopIdProvider);
     final syncEnabled = !(await GuestModeService.isGuestMode());
-    final nowIso = DateTime.now().toIso8601String();
+    final nowIso = DateTime.now().toUtc().toIso8601String();
 
     try {
       for (final p in _products) {

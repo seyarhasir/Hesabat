@@ -162,7 +162,7 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
     final newStatus = newRemaining <= 0 ? 'paid' : 'partial';
     final paymentId = const Uuid().v4();
     final syncEnabled = !(await GuestModeService.isGuestMode());
-    final nowIso = DateTime.now().toIso8601String();
+    final nowIso = DateTime.now().toUtc().toIso8601String();
 
     setState(() => _saving = true);
     try {

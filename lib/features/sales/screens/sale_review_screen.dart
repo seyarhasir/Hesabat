@@ -760,7 +760,7 @@ class _SaleReviewScreenState extends ConsumerState<SaleReviewScreen> {
     final creditAmount = _paymentMethod == 'credit' ? total : (_paymentMethod == 'mixed' ? mixedRemaining.toDouble() : 0.0);
     final isCreditSale = creditAmount > 0;
     final syncEnabled = !(await GuestModeService.isGuestMode());
-    final nowIso = DateTime.now().toIso8601String();
+    final nowIso = DateTime.now().toUtc().toIso8601String();
 
     try {
       await db.salesDao.insertSale(

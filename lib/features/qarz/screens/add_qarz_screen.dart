@@ -281,7 +281,7 @@ class _AddQarzScreenState extends ConsumerState<AddQarzScreen> {
     final db = ref.read(databaseProvider);
     final shopId = ref.read(currentShopIdProvider);
     final syncEnabled = !(await GuestModeService.isGuestMode());
-    final nowIso = DateTime.now().toIso8601String();
+    final nowIso = DateTime.now().toUtc().toIso8601String();
     final amount = double.parse(_amountController.text.trim());
     final notes = _notesController.text.trim().isEmpty ? null : _notesController.text.trim();
 

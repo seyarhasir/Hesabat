@@ -164,7 +164,7 @@ class ShopProfileService {
       'district': profile.district,
       'currency_pref': profile.currency,
       'subscription_status': profile.subscriptionStatus,
-      'updated_at': DateTime.now().toIso8601String(),
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
     };
 
     try {

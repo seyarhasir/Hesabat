@@ -110,7 +110,7 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
     final shopId = ref.read(currentShopIdProvider);
     final customerId = const Uuid().v4();
     final syncEnabled = !(await GuestModeService.isGuestMode());
-    final nowIso = DateTime.now().toIso8601String();
+    final nowIso = DateTime.now().toUtc().toIso8601String();
     final phone = _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim();
     final note = _noteController.text.trim().isEmpty ? null : _noteController.text.trim();
 

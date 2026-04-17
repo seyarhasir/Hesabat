@@ -66,7 +66,7 @@ class _QarzDashboardScreenState extends ConsumerState<QarzDashboardScreen> {
 
           final totalOwed = allDebts.fold<double>(0, (sum, d) => sum + d.amountRemaining);
           final overdueCount = allDebts.where((d) {
-            final days = DateTime.now().difference(d.createdAt).inDays;
+            final days = DateTime.now().difference(d.createdAt).inDays.clamp(0, 999999);
             return days > 7;
           }).length;
 
@@ -160,7 +160,7 @@ class _QarzDashboardScreenState extends ConsumerState<QarzDashboardScreen> {
             debt: debt,
             customerName: customer?.name ?? _tr('Unknown', 'نامشخص', 'نامعلوم'),
             customerPhone: customer?.phone,
-            daysSince: DateTime.now().difference(debt.createdAt).inDays,
+            daysSince: DateTime.now().difference(debt.createdAt).inDays.clamp(0, 999999),
           );
         }).toList();
 
@@ -458,7 +458,7 @@ class _QarzDashboardScreenState extends ConsumerState<QarzDashboardScreen> {
     final newStatus = newRemaining <= 0 ? 'paid' : 'partial';
     final paymentId = const Uuid().v4();
     final syncEnabled = !(await GuestModeService.isGuestMode());
-    final nowIso = DateTime.now().toIso8601String();
+    final nowIso = DateTime.now().toUtc().toIso8601String();
 
     try {
       await db.debtsDao.recordPayment(
