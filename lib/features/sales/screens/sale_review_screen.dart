@@ -11,6 +11,7 @@ import '../../../core/settings/calendar_system_provider.dart';
 import '../../../core/utils/exchange_rate_service.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/utils/number_system_formatter.dart';
+import '../../../core/settings/subscription_write_guard.dart';
 import '../../../shared/widgets/currency_selector.dart';
 import '../../../shared/widgets/currency_display.dart';
 import '../../../shared/widgets/currency_display.dart';
@@ -706,6 +707,9 @@ class _SaleReviewScreenState extends ConsumerState<SaleReviewScreen> {
   }
 
   Future<void> _confirmSale(List<Map<String, dynamic>> items, double subtotal, double total) async {
+    final canWrite = await SubscriptionWriteGuard.ensureCanWrite(context, _tr);
+    if (!canWrite) return;
+
     if (items.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_tr('Cart is empty', 'سبد خرید خالی است', 'ستاسو کڅوړه خالي ده'))));
       return;

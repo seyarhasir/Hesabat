@@ -46,11 +46,13 @@ class _CustomerDebtDetailScreenState extends ConsumerState<CustomerDebtDetailScr
 
     final db = ref.read(databaseProvider);
     final debts = await db.debtsDao.getDebtsByCustomer(customerId);
+    debts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     final Map<String, List<DebtPayment>> paymentsByDebt = {};
     DateTime? lastPaymentAt;
     for (final debt in debts) {
       final payments = await db.debtsDao.getDebtPayments(debt.id);
+      payments.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       paymentsByDebt[debt.id] = payments;
       for (final p in payments) {
         if (lastPaymentAt == null || p.createdAt.isAfter(lastPaymentAt)) {
@@ -135,6 +137,7 @@ class _CustomerDebtDetailScreenState extends ConsumerState<CustomerDebtDetailScr
                   FilledButton.icon(
                     onPressed: () async {
                       final openDebts = _debts.where((d) => d.status != 'paid').toList();
+                      openDebts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
                       if (openDebts.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_tr('No open debt available for payment', 'بدهی بازی برای پرداخت وجود ندارد', 'د تادیې لپاره خلاص پور نشته'))));
                         return;

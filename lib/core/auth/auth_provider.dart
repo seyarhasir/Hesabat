@@ -56,7 +56,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       }
       state = AuthState(mode: mode, guestLimits: limits);
     } catch (e) {
-      state = AuthState(error: e.toString());
+      state = AuthState(error: _friendlyError(e));
     }
   }
   
@@ -68,7 +68,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = state.copyWith(isLoading: false);
       return success;
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: _friendlyError(e));
       return false;
     }
   }
@@ -81,7 +81,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = const AuthState(mode: AuthMode.authenticated);
       return profile;
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: _friendlyError(e));
       return null;
     }
   }
@@ -97,7 +97,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         guestLimits: limits['limits'] as Map<String, int>?,
       );
     } catch (e) {
-      state = AuthState(error: e.toString());
+      state = AuthState(error: _friendlyError(e));
     }
   }
   
@@ -108,7 +108,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await _authService.signOut();
       state = const AuthState(mode: AuthMode.guest);
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: _friendlyError(e));
     }
   }
   
@@ -123,6 +123,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// Clear error
   void clearError() {
     state = state.copyWith(error: null);
+  }
+
+  String _friendlyError(Object error) {
+    final raw = error.toString().replaceFirst(RegExp(r'^Exception:\s*'), '').trim();
+    final lower = raw.toLowerCase();
+
+    if (lower.contains('user already registered') ||
+        lower.contains('user already exists') ||
+        lower.contains('already registered')) {
+      return 'Passcode verified, but cloud login is out of sync. Please contact admin support.';
+    }
+
+    return raw;
   }
 }
 

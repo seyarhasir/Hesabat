@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import '../../../core/auth/guest_mode_service.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/database/database_provider.dart';
+import '../../../core/settings/subscription_write_guard.dart';
 import '../../../core/sync/sync_service.dart';
 import '../../../core/utils/barcode_lookup_service.dart';
 import '../../../shared/theme/app_colors.dart';
@@ -386,6 +387,9 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final canWrite = await SubscriptionWriteGuard.ensureCanWrite(context, _tr);
+    if (!canWrite) return;
+
     setState(() => _isSaving = true);
 
     final db = ref.read(databaseProvider);
@@ -521,6 +525,10 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
             text: _tr('Delete', 'حذف', 'حذف'),
             onPressed: () async {
               Navigator.pop(context);
+
+              final canWrite = await SubscriptionWriteGuard.ensureCanWrite(this.context, _tr);
+              if (!canWrite) return;
+
               final db = ref.read(databaseProvider);
               final shopId = ref.read(currentShopIdProvider);
               await db.productsDao.softDeleteProduct(widget.product!.id);

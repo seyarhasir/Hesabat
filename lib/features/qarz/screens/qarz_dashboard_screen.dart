@@ -7,6 +7,7 @@ import '../../../core/auth/guest_mode_service.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/database/database_provider.dart';
 import '../../../core/sync/sync_service.dart';
+import '../../../core/settings/subscription_write_guard.dart';
 import '../../../core/utils/number_system_formatter.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/widgets/debt_badge.dart';
@@ -25,7 +26,7 @@ class QarzDashboardScreen extends ConsumerStatefulWidget {
 
 class _QarzDashboardScreenState extends ConsumerState<QarzDashboardScreen> {
   String _searchQuery = '';
-  String _sortBy = 'amount';
+  String _sortBy = 'newest';
 
   String get _lang => Localizations.localeOf(context).languageCode;
   String _tr(String en, String fa, [String? ps]) => _lang == 'fa' ? fa : (_lang == 'ps' ? (ps ?? fa) : en);
@@ -174,6 +175,9 @@ class _QarzDashboardScreenState extends ConsumerState<QarzDashboardScreen> {
 
         // Sort
         switch (_sortBy) {
+          case 'newest':
+            displayDebts.sort((a, b) => b.debt.createdAt.compareTo(a.debt.createdAt));
+            break;
           case 'amount':
             displayDebts.sort((a, b) => b.debt.amountRemaining.compareTo(a.debt.amountRemaining));
             break;
@@ -182,6 +186,9 @@ class _QarzDashboardScreenState extends ConsumerState<QarzDashboardScreen> {
             break;
           case 'name':
             displayDebts.sort((a, b) => a.customerName.compareTo(b.customerName));
+            break;
+          default:
+            displayDebts.sort((a, b) => b.debt.createdAt.compareTo(a.debt.createdAt));
             break;
         }
 
@@ -318,6 +325,12 @@ class _QarzDashboardScreenState extends ConsumerState<QarzDashboardScreen> {
               Text(_tr('Sort by', 'مرتب‌سازی', 'ترتیب د'), style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 16),
               ListTile(
+                leading: const Icon(Icons.new_releases_outlined),
+                title: Text(_tr('Newest first', 'جدیدترین اول', 'نوي لومړی')),
+                trailing: _sortBy == 'newest' ? const Icon(Icons.check) : null,
+                onTap: () { setState(() => _sortBy = 'newest'); Navigator.pop(context); },
+              ),
+              ListTile(
                 leading: const Icon(Icons.attach_money),
                 title: Text(_tr('Highest amount', 'بیشترین مبلغ', 'تر ټولو لوړ مبلغ')),
                 trailing: _sortBy == 'amount' ? const Icon(Icons.check) : null,
@@ -450,6 +463,9 @@ class _QarzDashboardScreenState extends ConsumerState<QarzDashboardScreen> {
   }
 
   void _processPayment(_DebtDisplay display, double amount) async {
+    final canWrite = await SubscriptionWriteGuard.ensureCanWrite(context, _tr);
+    if (!canWrite) return;
+
     final db = ref.read(databaseProvider);
     final shopId = ref.read(currentShopIdProvider);
     final debt = display.debt;
@@ -558,6 +574,9 @@ class _QarzDashboardScreenState extends ConsumerState<QarzDashboardScreen> {
   }
 
   Future<void> _openAddQarzPage() async {
+    final canWrite = await SubscriptionWriteGuard.ensureCanWrite(context, _tr);
+    if (!canWrite) return;
+
     final result = await Navigator.pushNamed(context, '/qarz/add-debt');
     if (result == true && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../../../core/auth/guest_mode_service.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/database/database_provider.dart';
+import '../../../core/settings/subscription_write_guard.dart';
 import '../../../core/sync/sync_service.dart';
 
 class AddCustomerScreen extends ConsumerStatefulWidget {
@@ -101,6 +102,9 @@ class _AddCustomerScreenState extends ConsumerState<AddCustomerScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+
+    final canWrite = await SubscriptionWriteGuard.ensureCanWrite(context, _tr);
+    if (!canWrite) return;
 
     final name = _nameController.text.trim();
 

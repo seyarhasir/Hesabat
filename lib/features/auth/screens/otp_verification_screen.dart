@@ -18,13 +18,102 @@ class OtpVerificationScreen extends ConsumerStatefulWidget {
 
 class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
   final _passcodeController = TextEditingController();
+  final _passcodeFocusNode = FocusNode();
   bool _isLoading = false;
-  bool _obscurePasscode = true;
 
   @override
   void dispose() {
     _passcodeController.dispose();
+    _passcodeFocusNode.dispose();
     super.dispose();
+  }
+
+  String get _sanitizedPasscode {
+    final value = _passcodeController.text.replaceAll(RegExp(r'[^A-Za-z0-9]'), '');
+    return value.length <= 10 ? value : value.substring(0, 10);
+  }
+
+  Widget _buildPasscodeBoxes(ThemeData theme, ColorScheme cs) {
+    final passcode = _sanitizedPasscode;
+
+    return GestureDetector(
+      onTap: () => _passcodeFocusNode.requestFocus(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: double.infinity,
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: List.generate(10, (index) {
+                final hasValue = index < passcode.length;
+                final isActive = passcode.length == index && !_isLoading;
+                final char = hasValue ? passcode[index] : '';
+
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 140),
+                  width: 30,
+                  height: 44,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: cs.surface,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isActive
+                          ? cs.primary
+                          : hasValue
+                              ? cs.primary.withOpacity(0.45)
+                              : cs.outline.withOpacity(0.28),
+                      width: isActive ? 2 : 1.4,
+                    ),
+                  ),
+                  child: Text(
+                    char,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: cs.onSurface,
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${passcode.length}/10',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: cs.onSurface.withOpacity(0.55),
+            ),
+          ),
+          Opacity(
+            opacity: 0,
+            child: SizedBox(
+              height: 0,
+              width: 0,
+              child: TextField(
+                controller: _passcodeController,
+                focusNode: _passcodeFocusNode,
+                autofocus: true,
+                enabled: !_isLoading,
+                maxLength: 10,
+                keyboardType: TextInputType.visiblePassword,
+                textInputAction: TextInputAction.done,
+                autocorrect: false,
+                enableSuggestions: false,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
+                  LengthLimitingTextInputFormatter(10),
+                ],
+                onChanged: (_) => setState(() {}),
+                onSubmitted: (_) => _verifyOtp(),
+                decoration: const InputDecoration(counterText: ''),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _verifyOtp() async {
@@ -186,48 +275,9 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                                 ),
                               ],
                             ),
-                            child: TextField(
-                              controller: _passcodeController,
-                              autofocus: true,
-                              enabled: !_isLoading,
-                              maxLength: 10,
-                              keyboardType: TextInputType.visiblePassword,
-                              textInputAction: TextInputAction.done,
-                              obscureText: _obscurePasscode,
-                              autocorrect: false,
-                              enableSuggestions: false,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
-                                LengthLimitingTextInputFormatter(10),
-                              ],
-                              onSubmitted: (_) => _verifyOtp(),
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                letterSpacing: 4,
-                                fontWeight: FontWeight.bold,
-                                color: cs.onSurface,
-                              ),
-                              decoration: InputDecoration(
-                                hintText: '••••••••••',
-                                hintStyle: TextStyle(
-                                  color: cs.onSurface.withOpacity(0.2),
-                                  letterSpacing: 4,
-                                ),
-                                border: InputBorder.none,
-                                contentPadding: const EdgeInsets.fromLTRB(20, 18, 12, 18),
-                                counterText: '',
-                                suffixIcon: Padding(
-                                  padding: const EdgeInsets.only(right: 8.0),
-                                  child: IconButton(
-                                    onPressed: _isLoading
-                                        ? null
-                                        : () => setState(() => _obscurePasscode = !_obscurePasscode),
-                                    icon: Icon(
-                                      _obscurePasscode ? Icons.visibility_rounded : Icons.visibility_off_rounded,
-                                      color: cs.primary.withOpacity(0.6),
-                                    ),
-                                  ),
-                                ),
-                              ),
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                              child: _buildPasscodeBoxes(theme, cs),
                             ),
                           ),
                         ],

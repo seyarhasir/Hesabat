@@ -226,7 +226,24 @@ class AuthService {
       }
 
       if (msg.contains('already registered') || msg.contains('user already exists')) {
-        throw Exception('Cloud user already exists for $primaryEmail with a different password. Delete that auth user and retry login.');
+        // Last attempt: user might exist under a legacy email alias.
+        for (final email in emails) {
+          try {
+            await _supabase.auth.signInWithPassword(email: email, password: passcode);
+            final signedInSession = _supabase.auth.currentSession;
+            if (signedInSession != null) {
+              await _storeSession();
+              return;
+            }
+          } on AuthException {
+            // try next alias
+          }
+        }
+
+        throw Exception(
+          'Passcode verified, but cloud login is out of sync for this account. '
+          'Please ask admin to sync/reset the cloud password for this phone.',
+        );
       }
 
       // Try one final sign-in in case signUp failed because user already exists.

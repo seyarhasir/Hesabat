@@ -15,6 +15,20 @@ class SubscriptionScreen extends ConsumerWidget {
 
   String _tr(String lang, String en, String fa, [String? ps]) => lang == 'fa' ? fa : (lang == 'ps' ? (ps ?? fa) : en);
 
+  String _effectiveStatus(ShopProfile? profile, bool isGuest) {
+    if (isGuest || profile == null) return 'guest';
+
+    // If computed state says inactive, treat as expired for UI regardless of raw status.
+    if (!profile.isSubscriptionActive) return 'expired';
+
+    if (profile.subscriptionStatus == 'trial') return 'trial';
+    if (profile.subscriptionStatus == 'expired' || profile.subscriptionStatus == 'suspended') {
+      return 'expired';
+    }
+
+    return 'active';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final lang = Localizations.localeOf(context).languageCode;
@@ -29,18 +43,19 @@ class SubscriptionScreen extends ConsumerWidget {
         builder: (context, snapshot) {
           final profile = snapshot.data;
           final isGuest = authState.status != AuthStatus.authenticated;
+          final effectiveStatus = _effectiveStatus(profile, isGuest);
           
-          String planDescription = isGuest 
+          String planDescription = effectiveStatus == 'guest'
               ? _tr(lang, 'Demo Mode', 'حالت آزمایشی', 'ازمایښتي حالت')
-              : (profile?.subscriptionStatus == 'trial'
+              : (effectiveStatus == 'trial'
                 ? _tr(lang, 'Trial Period', 'دوره آزمایشی', 'ازمایښتي دوره')
-                : (profile?.subscriptionStatus == 'expired'
+                : (effectiveStatus == 'expired'
                   ? _tr(lang, 'Expired', 'منقضی شده', 'پای ته رسیدلی')
                   : _tr(lang, 'Active Plan', 'پلن فعال', 'فعال پلان')));
 
           String? dateInfo;
           if (!isGuest && profile != null) {
-            final date = profile.subscriptionStatus == 'trial' ? profile.trialEndsAt : profile.subscriptionEndsAt;
+            final date = effectiveStatus == 'trial' ? profile.trialEndsAt : profile.subscriptionEndsAt;
             if (date != null) {
               final calendarSystem = ref.read(appCalendarSystemProvider);
               final formattedDate = NumberSystemFormatter.apply(
@@ -49,7 +64,7 @@ class SubscriptionScreen extends ConsumerWidget {
                   locale: lang,
                 ),
               );
-              dateInfo = profile.subscriptionStatus == 'expired'
+              dateInfo = effectiveStatus == 'expired'
                   ? _tr(lang, 'Expired on $formattedDate', 'در تاریخ $formattedDate منقضی شد', 'په $formattedDate پای ته ورسېد')
                   : _tr(lang, 'Expires on $formattedDate', 'تاریخ انقضا: $formattedDate', 'د ختمیدو نیټه: $formattedDate');
             }

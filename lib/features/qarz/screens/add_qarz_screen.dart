@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../../../core/auth/guest_mode_service.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/database/database_provider.dart';
+import '../../../core/settings/subscription_write_guard.dart';
 import '../../../core/sync/sync_service.dart';
 
 class AddQarzScreen extends ConsumerStatefulWidget {
@@ -275,6 +276,9 @@ class _AddQarzScreenState extends ConsumerState<AddQarzScreen> {
 
   Future<void> _saveQarz() async {
     if (!_formKey.currentState!.validate()) return;
+
+    final canWrite = await SubscriptionWriteGuard.ensureCanWrite(context, _tr);
+    if (!canWrite) return;
 
     setState(() => _saving = true);
 

@@ -50,7 +50,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
             final q = _query.toLowerCase();
             customers.retainWhere((c) => c.name.toLowerCase().contains(q) || (c.phone?.toLowerCase().contains(q) ?? false));
           }
-          customers.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+          customers.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
           final withDebt = customers.where((c) => c.totalOwed > 0).length;
           final clear = customers.length - withDebt;

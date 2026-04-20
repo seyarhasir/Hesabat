@@ -10,6 +10,7 @@ import '../../../core/sync/sync_service.dart';
 import '../../../core/utils/number_system_formatter.dart';
 import '../../../shared/widgets/currency_display.dart';
 import '../../../core/settings/currency_preference_provider.dart';
+import '../../../core/settings/subscription_write_guard.dart';
 
 class RecordPaymentScreen extends ConsumerStatefulWidget {
   const RecordPaymentScreen({super.key});
@@ -149,6 +150,9 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
     required String customerId,
     required double amountRemaining,
   }) async {
+    final canWrite = await SubscriptionWriteGuard.ensureCanWrite(context, _tr);
+    if (!canWrite) return;
+
     final amount = double.tryParse(_amountController.text.trim()) ?? 0;
     if (debtId.isEmpty || customerId.isEmpty || amount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_tr('Invalid payment data', 'اطلاعات پرداخت نامعتبر است', 'د تادیې معلومات ناسم دي'))));

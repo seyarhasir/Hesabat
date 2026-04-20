@@ -5,6 +5,7 @@ import 'package:drift/drift.dart' show Value;
 import '../../../core/auth/guest_mode_service.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/database/database_provider.dart';
+import '../../../core/settings/subscription_write_guard.dart';
 import '../../../core/sync/sync_service.dart';
 import '../../../core/utils/number_system_formatter.dart';
 
@@ -75,6 +76,9 @@ class _StockTakeScreenState extends ConsumerState<StockTakeScreen> {
   }
 
   Future<void> _save() async {
+    final canWrite = await SubscriptionWriteGuard.ensureCanWrite(context, _tr);
+    if (!canWrite) return;
+
     setState(() => _saving = true);
     final db = ref.read(databaseProvider);
     final shopId = ref.read(currentShopIdProvider);
